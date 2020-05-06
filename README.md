@@ -1,4 +1,4 @@
-# msft-publuc
+# msft-public
 My Public MSFT Repo
 
 

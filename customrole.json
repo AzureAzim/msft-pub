@@ -1,0 +1,16 @@
+{
+    "Name": "Sub-AlertCustomerole",
+    "Id": "id",
+    "IsCustom": true,
+    "Description": "This role is supposed to be able to read the subscription creation activity logs",
+    "Actions": [
+        "*/read"
+    ],
+    "NotActions": [],
+    "DataActions": [],
+    "NotDataActions": [],
+    "AssignableScopes": [
+        "/providers/microsoft.management/managementGroups/AzimLab-Mgmt",
+        "/providers/Microsoft.Insights"
+    ]
+}

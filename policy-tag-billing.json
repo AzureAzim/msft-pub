@@ -3,7 +3,7 @@
     "displayName": "Cost Center Tag Enforcement Policy",
     "policyType": "Custom",
     "mode": "All",
-    "description": "Requires the user to enter an appropriate Cost Center.  Current Cost Centers Available are listed below.  If your cost center is not listed contact Tina Kennedy or Devin Heese\n100157\tSoftware Dev Admin\n100162\tCourt Reporting Software\n100163\tLS Software\n100171\tProduct Mgmt \n100172\tProject Mgmt \n100181\tData Products\n100183\tWorkflow & Automation\n100167\tCh11 Software\n100173\tSettlement Software\n100174\tECAR Dev Billable\n100164\tCh13 Software\n100169\tAACER Software\n100182\tSW Modernization\n110085\tProcessing\n",
+    "description": "Requires the user to enter an appropriate Cost Center.  Current Cost Centers Available are listed below.  If your cost center is not listed contact the Cloud Office",
     "metadata": {
       "category": "Tags",
       "createdBy": "110fe3d2-60cb-481d-83d4-dd2e007dbba6",

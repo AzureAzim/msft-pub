@@ -1,0 +1,1 @@
+choco install vscode 7zip googlechrome microsoft-edge firefox notepadplusplus calibre ssms mysql.workbench winscp putty microsoft-windows-terminal python3 git.install powerautomatedesktop powertoys prusaslicer -y

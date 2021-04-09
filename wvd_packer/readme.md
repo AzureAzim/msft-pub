@@ -9,6 +9,7 @@ This article is to show you how you can create a basic WVD customized image with
 * Installing [FsLogix](https://github.com/DeanCefola/Azure-WVD/blob/master/PowerShell/FSLogixSetup.ps1)
 * Running a [WVD Optimzation script](https://github.com/The-Virtual-Desktop-Team/Virtual-Desktop-Optimization-Tool) from the WVD Community repo.
 * Installing a LOB App, [MS Teams](https://docs.microsoft.com/en-us/azure/virtual-desktop/teams-on-wvd)
+* installing Chocolatey, [Chocolatey Package Manager](https://chocolatey.org/install)
 * [Windows Restart](https://docs.microsoft.com/azure/virtual-machines/linux/image-builder-json?toc=%2Fazure%2Fvirtual-machines%2Fwindows%2Ftoc.json&bc=%2Fazure%2Fvirtual-machines%2Fwindows%2Fbreadcrumb%2Ftoc.json#windows-restart-customizer)
 * [Windows Update](https://docs.microsoft.com/azure/virtual-machines/linux/image-builder-json?toc=%2Fazure%2Fvirtual-machines%2Fwindows%2Ftoc.json&bc=%2Fazure%2Fvirtual-machines%2Fwindows%2Fbreadcrumb%2Ftoc.json#windows-update-customizer)
 

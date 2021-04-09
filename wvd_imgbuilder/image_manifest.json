@@ -60,14 +60,14 @@
                         "name": "installFsLogix",
                         "runElevated": true,
                         "runAsSystem": true,
-                        "scriptUri": "https://raw.githubusercontent.com/AzureAzim/msft-pub/master/wvd_packer/0_installConfFsLogix.ps1"
+                        "scriptUri": "https://raw.githubusercontent.com/AzureAzim/msft-pub/master/wvd_imgbuilder/0_installConfFsLogix.ps1"
                     },
                     {
                         "type": "PowerShell",
                         "name": "OptimizeOS",
                         "runElevated": true,
                         "runAsSystem": true,
-                        "scriptUri": "https://raw.githubusercontent.com/AzureAzim/msft-pub/master/wvd_packer/1_Optimize_OS_for_WVD.ps1"
+                        "scriptUri": "https://raw.githubusercontent.com/AzureAzim/msft-pub/master/wvd_imgbuilder/1_Optimize_OS_for_WVD.ps1"
                     },
                     {
                         "type": "WindowsRestart",
@@ -79,28 +79,28 @@
                         "name": "Install Teams",
                         "runElevated": true,
                         "runAsSystem": true,
-                        "scriptUri": "https://raw.githubusercontent.com/AzureAzim/msft-pub/master/wvd_packer/2_installTeams.ps1"
+                        "scriptUri": "https://raw.githubusercontent.com/AzureAzim/msft-pub/master/wvd_imgbuilder/2_installTeams.ps1"
                     },
                     {
                         "type": "PowerShell",
                         "name": "Install Chocolatey",
                         "runElevated": true,
                         "runAsSystem": true,
-                        "scriptUri": "https://raw.githubusercontent.com/AzureAzim/msft-pub/master/wvd_packer/3_install_chocolatey.ps1"
+                        "scriptUri": "https://raw.githubusercontent.com/AzureAzim/msft-pub/master/wvd_imgbuilder/3_install_chocolatey.ps1"
                     },
                     {
                         "type": "PowerShell",
                         "name": "Install Other Apps",
                         "runElevated": true,
                         "runAsSystem": true,
-                        "scriptUri": "https://raw.githubusercontent.com/AzureAzim/msft-pub/master/wvd_packer/4_install_otherapps.ps1"
+                        "scriptUri": "https://raw.githubusercontent.com/AzureAzim/msft-pub/master/wvd_imgbuilder/4_install_otherapps.ps1"
                     },
                     {
                         "type": "PowerShell",
                         "name": "Install Other Apps",
                         "runElevated": true,
                         "runAsSystem": true,
-                        "scriptUri": "https://raw.githubusercontent.com/AzureAzim/msft-pub/master/wvd_packer/5_install-rsat.ps1"
+                        "scriptUri": "https://raw.githubusercontent.com/AzureAzim/msft-pub/master/wvd_imgbuilder/5_install-rsat.ps1"
                     },
                     {
                         "type": "WindowsRestart",

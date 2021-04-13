@@ -206,7 +206,7 @@ Get-AzVMImageSku -Location westus2 -PublisherName MicrosoftWindowsDesktop -Offer
 ```powerShell
 
 $templateUrl="https://raw.githubusercontent.com/AzureAzim/msft-pub/master/wvd_imgbuilder/image_manifest.json"
-$templateFilePath = "armTemplateWVD.json"
+$templateFilePath = "image_manifest.json"
 
 Invoke-WebRequest -Uri $templateUrl -OutFile $templateFilePath -UseBasicParsing
 

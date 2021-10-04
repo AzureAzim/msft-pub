@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-    This function sets the Log Analytics Workspace locally on the machine byt reconfiguring the Agent Locally
+    This function replaces the Log Analytics Workspace locally on the machine by reconfiguring the Agent Locally. This is for devices using the old MMA Agent
 .DESCRIPTION
     This will invoke a coommand on a PC remotely to set the Log Analytics Workspace on a machine using PSRemoting/WSMan
 .EXAMPLE

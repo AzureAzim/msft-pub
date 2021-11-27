@@ -5,6 +5,7 @@ $apptolookfor = "powertoys","prusaslicer","firefox","googlechrome","7zip","chrom
 
 [System.Collections.ArrayList]$chocoapps = (choco list --local-only).split([Environment]::NewLine)
 [System.Collections.ArrayList]$chocooutdatedapps = (choco outdated).split([Environment]::NewLine)
+$choconoupdatesstring = "Chocolatey has determined 0 package(s) are outdated. "
 $chocoversion = $chocoapps[0]
 $chocopkgcountremoval = $chocoapps[-1]
 $chocoapps.remove($chocopkgcountremoval)
@@ -21,7 +22,7 @@ if($mode -eq "detect") {
             $modechange = $true
         }
     }
-    if ($chocooutdatedapps -ne $null) {
+    if ($chocooutdatedapps -contains $choconoupdatesstring) {
         write-host "outdated apps detected"
         $modechange = $true
     }
@@ -38,9 +39,9 @@ Elseif($mode -ne "detect" -or $null) {
             write-host "$app not found, installing $app"
             choco install $app -y
         }
-        if ($chocooutdatedapps -ne $null) {
+        if ($chocooutdatedapps -contains $choconoupdatesstring) {
             write-host "outdated apps detected"
-            choco upgrade all
+            choco upgrade all -y
         }
     }
 

@@ -8,7 +8,7 @@ $servicestate = get-service  -Name "w32time"
 ######DETECT GOES HERE
 
 if($mode -eq "detect") {
-    if ($timeType -ne "All") {
+    if ($timeType -ne "AllSync") {
         $modeerror += Write-Warning "NTP Type is wrong $Timetype"
         $modechange = $true
     }
@@ -26,7 +26,7 @@ if($mode -eq "detect") {
 } Elseif($mode -eq "remediate") {  
     #Turn on the w32time service to ensure its enabled
     Set-Service -Name "w32time" -Status running -StartupType automatic
-    w32tm /config /manualpeerlist:time.windows.com /syncfromflags:all
+    w32tm /config /manualpeerlist:"time.windows.com,0x9" /syncfromflags:all
     net stop w32time
     net start w32time
     exit 0 }

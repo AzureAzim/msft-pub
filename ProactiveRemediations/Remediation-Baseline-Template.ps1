@@ -5,8 +5,7 @@ $modechange = $false
 ##detection mode
 if($mode -eq "detect") {
 
-if(#we detect the tthing we wanna change
-) {
+if(<#we detect the tthing we wanna change#>) {
 
     $modechange = $true
 }

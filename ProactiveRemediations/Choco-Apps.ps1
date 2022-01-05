@@ -13,7 +13,7 @@ $chocoapps.remove($chocoversion)
 
 if($mode -eq "detect") {
     foreach ($app in $apptolookfor){
-        $appexists = ($apps -contains "$app")
+        $appexists = ($apptolookfor -contains "$app")
         if ($appexists -eq $true) {
             write-host "$app found"
         }
@@ -22,12 +22,12 @@ if($mode -eq "detect") {
             $modechange = $true
         }
     }
-    if ($chocooutdatedapps -contains $choconoupdatesstring) {
+    if ($chocooutdatedapps -notcontains $choconoupdatesstring) {
         write-host "outdated apps detected"
         $modechange = $true
     }
     if ($modechange -eq $true){exit 1}
-    elsif ($modechange -eq $false){exit 0}
+    elseif ($modechange -eq $false){exit 0}
 }
 Elseif($mode -ne "detect" -or $null) {
     foreach ($app in $apptolookfor){
@@ -39,10 +39,11 @@ Elseif($mode -ne "detect" -or $null) {
             write-host "$app not found, installing $app"
             choco install $app -y
         }
-        if ($chocooutdatedapps -contains $choconoupdatesstring) {
+        if ($chocooutdatedapps -notcontains $choconoupdatesstring) {
             write-host "outdated apps detected"
             choco upgrade all -y
         }
+
     }
 
 }

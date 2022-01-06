@@ -1,3 +1,12 @@
+<#
+.SYNOPSIS
+    This script fixes time issues on endpoints if they are using the local clock and losing time sync. Mostly designed to run on AADJ Only devices that dont get time settings from a DC
+.DESCRIPTION
+   Import this in Microsoft Endpoint Manager Proactive Remediations, this piece of code should be uploaded into both Detect and Remediate fields.
+.NOTES
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+#>
+
 $mode = $MyInvocation.MyCommand.Name.Split(".")[0]
 $TimeKey= Get-ItemProperty -path "HKLM:\SYSTEM\CurrentControlSet\Services\W32Time\Parameters\"
 $Ntpserver = $timekey.ntpserver

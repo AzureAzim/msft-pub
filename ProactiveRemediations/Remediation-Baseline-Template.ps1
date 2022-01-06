@@ -5,19 +5,19 @@ $modechange = $false
 ##detection mode
 if($mode -eq "detect") {
 
-if(<#we detect the tthing we wanna change#>) {
+if(<#we detect the thing we wanna change#>) {
 
     $modechange = $true
 }
-
+#Exit logic
     if ($modechange -eq $false){exit 0}
     if ($modechange -eq $true){$modeerror; exit 1}
 
 }
-##remediation mode TODO: Get actual mode string from a runtime
+
 Elseif($mode --eq "remediate") {
 
-
+##THIS IS WHERE YOUR REMEDIATION CODE GOES
 
 exit 0
 }

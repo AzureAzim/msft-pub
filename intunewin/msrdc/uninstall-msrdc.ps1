@@ -1,4 +1,4 @@
-#THis short script downloads the latest MSRDC client from Microsoft and installs under the device context (for all users). It is meant to be packaged into an Intunewin and deployed to devices where this app is the primary shell
+#THis short script downloads the latest MSRDC client from Microsoft and uninstalls under the device context (for all users). It is meant to be packaged into an Intunewin and deployed to devices where this app is the primary shell
 
 
 # Source URL for MSRDC

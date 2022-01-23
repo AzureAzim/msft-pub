@@ -5,9 +5,9 @@ This is my lazy-persons build of the Microsoft Remote Desktop Client used for Az
 During Endpoint Manager import of IntuneWoin file, you must use these lines as parameters to configure:
 
 Install cmd: 
-  powershell.exe -executionpolicy Bypass -file .\install-msrdc.ps1
+  `powershell.exe -executionpolicy Bypass -file .\install-msrdc.ps1`
 Uninstall cmd: 
-  powershell.exe -executionpolicy Bypass -file .\uninstall-msrdc.ps1
+  `powershell.exe -executionpolicy Bypass -file .\uninstall-msrdc.ps1`
 
 Detection: 
-  C:\Program Files\Remote Desktop\msrdc.exe
+  `C:\Program Files\Remote Desktop\msrdc.exe`

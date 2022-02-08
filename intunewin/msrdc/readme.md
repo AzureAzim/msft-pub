@@ -1,7 +1,7 @@
 # Maintinence Free x64 MSRDC IntuneWin
 ## Inspired by Christian Brinkoff's [article](https://christiaanbrinkhoff.com/2020/11/12/learn-how-to-deploy-the-remote-desktop-msrdc-wvd-client-as-intune-win32-app-via-microsoft-endpoint-manager-mem-to-your-physical-clients/) 
 This is my lazy-persons build of the Microsoft Remote Desktop Client used for Azure Virtual Desktop or WIndows 365. This version is designed to download the latest version from Microsoft and install under the Device Context. No need for maintaining the package as this product team has very regular updates to this package. 
-### Updating the client when installed under machine context may be challenging if the user is not an administrator.
+#### Updating the client when installed under machine context may be challenging if the user is not an administrator.
 ## During Endpoint Manager import of IntuneWoin file, you must use these lines as parameters to configure:
 
 Install cmd: 

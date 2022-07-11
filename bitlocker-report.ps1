@@ -1,5 +1,5 @@
 #SCript is in DRAFT status
-
+#Requires -Modules Microsoft.graph
 Connect-MgGraph -scopes "BitLockerKey.ReadBasic.All", "DeviceManagementManagedDevices.Read.All"
 Select-MgProfile -Name beta
 #-Filter "operatingSystem eq 'Windows'"

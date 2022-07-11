@@ -38,3 +38,4 @@ foreach ($device in $ManagedDevices) {
 
 } 
 $Bitlockerreport
+$Bitlockerreport | export-csv .\blreport.csv

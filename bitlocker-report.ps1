@@ -1,9 +1,5 @@
-#SCript is in DRAFT status
 #Requires -Modules Microsoft.graph
-Connect-MgGraph -scopes "BitLockerKey.ReadBasic.All", "DeviceManagementManagedDevices.Read.All"
-Select-MgProfile -Name beta
-#-Filter "operatingSystem eq 'Windows'"
-
+#CODE IS IN DRAFT
 $ManagedDevices = Get-MgDeviceManagementManagedDevice -All -ErrorAction Stop -ErrorVariable GraphError
 $Bitlockerreport = @()
 foreach ($device in $ManagedDevices) {
@@ -23,7 +19,7 @@ foreach ($device in $ManagedDevices) {
     $KeyInput = ""
         foreach ($key in $keys) {
             $keyid = $key.id
-            $keyinput.("$keyid")
+            $keyinput += ("$keyid" + ";")
         }
         $Keyoutput = $KeyInput -join ";"
     #Table each data point
@@ -41,6 +37,4 @@ foreach ($device in $ManagedDevices) {
     $Bitlockerreport += $Deviceitem
 
 } 
-
-$Bitlockerreport | export-csv .\blreport.csv
-
+$Bitlockerreport

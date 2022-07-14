@@ -1,4 +1,7 @@
 #Requires -Modules Microsoft.graph
+Connect-MgGraph -scopes "BitLockerKey.ReadBasic.All", "DeviceManagementManagedDevices.Read.All"
+Select-MgProfile -Name beta
+
 #CODE IS IN DRAFT
 $ManagedDevices = Get-MgDeviceManagementManagedDevice -All -ErrorAction Stop -ErrorVariable GraphError
 $Bitlockerreport = @()

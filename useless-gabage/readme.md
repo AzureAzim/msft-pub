@@ -7,3 +7,5 @@ Not all contributions need to contribute to productivity. Sometimes girls just w
 Outlookswap is referenced from this blog post: https://azim.manjee.me/2023/05/13/embrace-the-chaos-a-useless-power-automate-that-changes-your-office-365-photo-daily/
 
 Annoy is a powershell that basically makes the remote computer beep at random intervals
+
+Altered Carbon script basiclly sets up my laptop the way i like it: Folder redirection to onedrive, UEV templates setup, app installs thru choco

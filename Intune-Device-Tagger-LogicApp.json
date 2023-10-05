@@ -1,0 +1,823 @@
+{
+    "definition": {
+        "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+        "actions": {
+            "For_each_LA_Object": {
+                "actions": {
+                    "For_each": {
+                        "actions": {
+                            "Add_Device_to_Group": {
+                                "inputs": {
+                                    "authentication": {
+                                        "audience": "https://graph.microsoft.com",
+                                        "clientId": "@variables('AppID')",
+                                        "secret": "@variables('AppKey')",
+                                        "tenant": "@variables('TenantID')",
+                                        "type": "ActiveDirectoryOAuth"
+                                    },
+                                    "body": {
+                                        "@@odata.id": "https://graph.microsoft.com/v1.0/directoryObjects/@{variables('EntraObjectID')}"
+                                    },
+                                    "headers": {
+                                        "Content-type:": "application/json"
+                                    },
+                                    "method": "POST",
+                                    "uri": "https://graph.microsoft.com/v1.0/groups/@{variables('ScopeGroupID')}/members/$ref"
+                                },
+                                "runAfter": {
+                                    "Set_variable_2": [
+                                        "Succeeded"
+                                    ]
+                                },
+                                "type": "Http"
+                            },
+                            "Set_variable_2": {
+                                "inputs": {
+                                    "name": "EntraObjectID",
+                                    "value": "@items('For_each')?['id']"
+                                },
+                                "runAfter": {},
+                                "type": "SetVariable"
+                            }
+                        },
+                        "foreach": "@body('Parse_Device_Query')?['value']",
+                        "runAfter": {
+                            "Parse_Device_Query": [
+                                "Succeeded"
+                            ]
+                        },
+                        "type": "Foreach"
+                    },
+                    "Get_a_row": {
+                        "inputs": {
+                            "host": {
+                                "connection": {
+                                    "name": "@parameters('$connections')['excelonlinebusiness']['connectionId']"
+                                }
+                            },
+                            "method": "get",
+                            "path": "/drives/@{encodeURIComponent('b!6AcuKxaXTUmoPIyCHlf6q4cwKsCgaMFFjn_5wZ8vHaZJPUZgA2-AT4POt701jYVk')}/files/@{encodeURIComponent(encodeURIComponent('01HX4BFQHSMCUR4CGMV5EKUSDTOI4TGNZO'))}/tables/@{encodeURIComponent('{BF355C82-EF52-4FBF-BE81-6A1ED62B519B}')}/items/@{encodeURIComponent(encodeURIComponent(variables('DeviceSerialNumber')))}",
+                            "queries": {
+                                "idColumn": "SerialNumber",
+                                "source": "sites/azimasaservice.sharepoint.com,2b2e07e8-9716-494d-a83c-8c821e57faab,c02a3087-68a0-45c1-8e7f-f9c19f2f1da6"
+                            }
+                        },
+                        "metadata": {
+                            "01HX4BFQHSMCUR4CGMV5EKUSDTOI4TGNZO": "/IntuneDeviceTagger.xlsx"
+                        },
+                        "runAfter": {
+                            "Set_DeviceName": [
+                                "Succeeded"
+                            ]
+                        },
+                        "type": "ApiConnection"
+                    },
+                    "HTTP_Query_to_Intune_Graph_for_device_Info": {
+                        "inputs": {
+                            "authentication": {
+                                "audience": "https://graph.microsoft.com",
+                                "clientId": "@variables('AppID')",
+                                "secret": "@variables('AppKey')",
+                                "tenant": "@variables('TenantID')",
+                                "type": "ActiveDirectoryOAuth"
+                            },
+                            "method": "GET",
+                            "uri": "https://graph.microsoft.com/v1.0/deviceManagement/managedDevices/@{items('For_each_LA_Object')['DeviceId']}"
+                        },
+                        "runAfter": {
+                            "Set_variable": [
+                                "Succeeded"
+                            ]
+                        },
+                        "type": "Http"
+                    },
+                    "HTTP_To_Query_AAD_Graph_for_Device_info": {
+                        "inputs": {
+                            "authentication": {
+                                "audience": "https://graph.microsoft.com",
+                                "clientId": "@variables('AppID')",
+                                "secret": "@variables('AppKey')",
+                                "tenant": "@variables('TenantID')",
+                                "type": "ActiveDirectoryOAuth"
+                            },
+                            "method": "GET",
+                            "uri": "https://graph.microsoft.com/v1.0/devices?$filter=deviceid eq '@{body('Parse_Intune_JSON')?['azureADDeviceId']}'"
+                        },
+                        "runAfter": {
+                            "Parse_Intune_JSON": [
+                                "Succeeded"
+                            ]
+                        },
+                        "type": "Http"
+                    },
+                    "Parse_Device_Query": {
+                        "inputs": {
+                            "content": "@body('HTTP_To_Query_AAD_Graph_for_Device_info')",
+                            "schema": {
+                                "properties": {
+                                    "@@odata.context": {
+                                        "type": "string"
+                                    },
+                                    "value": {
+                                        "items": {
+                                            "properties": {
+                                                "accountEnabled": {
+                                                    "type": "boolean"
+                                                },
+                                                "alternativeSecurityIds": {
+                                                    "items": {
+                                                        "properties": {
+                                                            "identityProvider": {},
+                                                            "key": {
+                                                                "type": "string"
+                                                            },
+                                                            "type": {
+                                                                "type": "integer"
+                                                            }
+                                                        },
+                                                        "required": [
+                                                            "type",
+                                                            "identityProvider",
+                                                            "key"
+                                                        ],
+                                                        "type": "object"
+                                                    },
+                                                    "type": "array"
+                                                },
+                                                "approximateLastSignInDateTime": {
+                                                    "type": "string"
+                                                },
+                                                "complianceExpirationDateTime": {},
+                                                "createdDateTime": {
+                                                    "type": "string"
+                                                },
+                                                "deletedDateTime": {},
+                                                "deviceCategory": {},
+                                                "deviceId": {
+                                                    "type": "string"
+                                                },
+                                                "deviceMetadata": {},
+                                                "deviceOwnership": {
+                                                    "type": "string"
+                                                },
+                                                "deviceVersion": {},
+                                                "displayName": {
+                                                    "type": "string"
+                                                },
+                                                "domainName": {},
+                                                "enrollmentProfileName": {
+                                                    "type": "string"
+                                                },
+                                                "enrollmentType": {
+                                                    "type": "string"
+                                                },
+                                                "extensionAttributes": {
+                                                    "properties": {
+                                                        "extensionAttribute1": {},
+                                                        "extensionAttribute10": {},
+                                                        "extensionAttribute11": {},
+                                                        "extensionAttribute12": {},
+                                                        "extensionAttribute13": {},
+                                                        "extensionAttribute14": {},
+                                                        "extensionAttribute15": {},
+                                                        "extensionAttribute2": {},
+                                                        "extensionAttribute3": {},
+                                                        "extensionAttribute4": {},
+                                                        "extensionAttribute5": {},
+                                                        "extensionAttribute6": {},
+                                                        "extensionAttribute7": {},
+                                                        "extensionAttribute8": {},
+                                                        "extensionAttribute9": {}
+                                                    },
+                                                    "type": "object"
+                                                },
+                                                "externalSourceName": {},
+                                                "id": {
+                                                    "type": "string"
+                                                },
+                                                "isCompliant": {},
+                                                "isManaged": {},
+                                                "isRooted": {
+                                                    "type": "boolean"
+                                                },
+                                                "managementType": {
+                                                    "type": "string"
+                                                },
+                                                "manufacturer": {
+                                                    "type": "string"
+                                                },
+                                                "mdmAppId": {
+                                                    "type": "string"
+                                                },
+                                                "model": {
+                                                    "type": "string"
+                                                },
+                                                "onPremisesLastSyncDateTime": {},
+                                                "onPremisesSyncEnabled": {},
+                                                "operatingSystem": {
+                                                    "type": "string"
+                                                },
+                                                "operatingSystemVersion": {
+                                                    "type": "string"
+                                                },
+                                                "physicalIds": {
+                                                    "type": "array"
+                                                },
+                                                "profileType": {},
+                                                "registrationDateTime": {},
+                                                "sourceType": {},
+                                                "systemLabels": {
+                                                    "type": "array"
+                                                },
+                                                "trustType": {}
+                                            },
+                                            "required": [
+                                                "id",
+                                                "deletedDateTime",
+                                                "accountEnabled",
+                                                "approximateLastSignInDateTime",
+                                                "complianceExpirationDateTime",
+                                                "createdDateTime",
+                                                "deviceCategory",
+                                                "deviceId",
+                                                "deviceMetadata",
+                                                "deviceOwnership",
+                                                "deviceVersion",
+                                                "displayName",
+                                                "domainName",
+                                                "enrollmentProfileName",
+                                                "enrollmentType",
+                                                "externalSourceName",
+                                                "isCompliant",
+                                                "isManaged",
+                                                "isRooted",
+                                                "managementType",
+                                                "manufacturer",
+                                                "mdmAppId",
+                                                "model",
+                                                "onPremisesLastSyncDateTime",
+                                                "onPremisesSyncEnabled",
+                                                "operatingSystem",
+                                                "operatingSystemVersion",
+                                                "physicalIds",
+                                                "profileType",
+                                                "registrationDateTime",
+                                                "sourceType",
+                                                "systemLabels",
+                                                "trustType",
+                                                "extensionAttributes",
+                                                "alternativeSecurityIds"
+                                            ],
+                                            "type": "object"
+                                        },
+                                        "type": "array"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        },
+                        "runAfter": {
+                            "HTTP_To_Query_AAD_Graph_for_Device_info": [
+                                "Succeeded"
+                            ]
+                        },
+                        "type": "ParseJson"
+                    },
+                    "Parse_Intune_JSON": {
+                        "inputs": {
+                            "content": "@body('HTTP_Query_to_Intune_Graph_for_device_Info')",
+                            "schema": {
+                                "properties": {
+                                    "@@odata.context": {
+                                        "type": "string"
+                                    },
+                                    "activationLockBypassCode": {},
+                                    "androidSecurityPatchLevel": {},
+                                    "azureADDeviceId": {
+                                        "type": "string"
+                                    },
+                                    "azureADRegistered": {},
+                                    "complianceGracePeriodExpirationDateTime": {
+                                        "type": "string"
+                                    },
+                                    "complianceState": {
+                                        "type": "string"
+                                    },
+                                    "configurationManagerClientEnabledFeatures": {},
+                                    "deviceActionResults": {
+                                        "type": "array"
+                                    },
+                                    "deviceCategoryDisplayName": {
+                                        "type": "string"
+                                    },
+                                    "deviceEnrollmentType": {
+                                        "type": "string"
+                                    },
+                                    "deviceHealthAttestationState": {},
+                                    "deviceName": {
+                                        "type": "string"
+                                    },
+                                    "deviceRegistrationState": {
+                                        "type": "string"
+                                    },
+                                    "easActivated": {
+                                        "type": "boolean"
+                                    },
+                                    "easActivationDateTime": {
+                                        "type": "string"
+                                    },
+                                    "easDeviceId": {},
+                                    "emailAddress": {},
+                                    "enrolledDateTime": {
+                                        "type": "string"
+                                    },
+                                    "ethernetMacAddress": {},
+                                    "exchangeAccessState": {
+                                        "type": "string"
+                                    },
+                                    "exchangeAccessStateReason": {
+                                        "type": "string"
+                                    },
+                                    "exchangeLastSuccessfulSyncDateTime": {
+                                        "type": "string"
+                                    },
+                                    "freeStorageSpaceInBytes": {
+                                        "type": "integer"
+                                    },
+                                    "iccid": {
+                                        "type": "string"
+                                    },
+                                    "id": {
+                                        "type": "string"
+                                    },
+                                    "imei": {},
+                                    "isEncrypted": {
+                                        "type": "boolean"
+                                    },
+                                    "isSupervised": {
+                                        "type": "boolean"
+                                    },
+                                    "jailBroken": {
+                                        "type": "string"
+                                    },
+                                    "lastSyncDateTime": {
+                                        "type": "string"
+                                    },
+                                    "managedDeviceName": {
+                                        "type": "string"
+                                    },
+                                    "managedDeviceOwnerType": {
+                                        "type": "string"
+                                    },
+                                    "managementAgent": {
+                                        "type": "string"
+                                    },
+                                    "managementCertificateExpirationDate": {
+                                        "type": "string"
+                                    },
+                                    "manufacturer": {
+                                        "type": "string"
+                                    },
+                                    "meid": {},
+                                    "model": {
+                                        "type": "string"
+                                    },
+                                    "notes": {},
+                                    "operatingSystem": {
+                                        "type": "string"
+                                    },
+                                    "osVersion": {
+                                        "type": "string"
+                                    },
+                                    "partnerReportedThreatState": {
+                                        "type": "string"
+                                    },
+                                    "phoneNumber": {},
+                                    "physicalMemoryInBytes": {
+                                        "type": "integer"
+                                    },
+                                    "remoteAssistanceSessionErrorDetails": {
+                                        "type": "string"
+                                    },
+                                    "remoteAssistanceSessionUrl": {
+                                        "type": "string"
+                                    },
+                                    "requireUserEnrollmentApproval": {},
+                                    "serialNumber": {
+                                        "type": "string"
+                                    },
+                                    "subscriberCarrier": {
+                                        "type": "string"
+                                    },
+                                    "totalStorageSpaceInBytes": {
+                                        "type": "integer"
+                                    },
+                                    "udid": {
+                                        "type": "string"
+                                    },
+                                    "userDisplayName": {},
+                                    "userId": {
+                                        "type": "string"
+                                    },
+                                    "userPrincipalName": {},
+                                    "wiFiMacAddress": {
+                                        "type": "string"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        },
+                        "runAfter": {
+                            "HTTP_Query_to_Intune_Graph_for_device_Info": [
+                                "Succeeded"
+                            ]
+                        },
+                        "type": "ParseJson"
+                    },
+                    "Set_DeviceID": {
+                        "inputs": {
+                            "name": "DeviceID",
+                            "value": "@items('For_each_LA_Object')['DeviceId']"
+                        },
+                        "runAfter": {
+                            "Set_DeviceSerialNumber": [
+                                "Succeeded"
+                            ]
+                        },
+                        "type": "SetVariable"
+                    },
+                    "Set_DeviceName": {
+                        "inputs": {
+                            "name": "DeviceName",
+                            "value": "@items('For_each_LA_Object')['DeviceName']"
+                        },
+                        "runAfter": {
+                            "Set_IntuneDeviceID": [
+                                "Succeeded"
+                            ]
+                        },
+                        "type": "SetVariable"
+                    },
+                    "Set_DeviceSerialNumber": {
+                        "inputs": {
+                            "name": "DeviceSerialNumber",
+                            "value": "@items('For_each_LA_Object')['SerialNumber']"
+                        },
+                        "runAfter": {},
+                        "type": "SetVariable"
+                    },
+                    "Set_IntuneDeviceID": {
+                        "inputs": {
+                            "name": "IntuneDeviceID",
+                            "value": "@items('For_each_LA_Object')['DeviceId']"
+                        },
+                        "runAfter": {
+                            "Set_DeviceID": [
+                                "Succeeded"
+                            ]
+                        },
+                        "type": "SetVariable"
+                    },
+                    "Set_variable": {
+                        "inputs": {
+                            "name": "ScopeGroupID",
+                            "value": "@body('Get_a_row')?['GroupID']"
+                        },
+                        "runAfter": {
+                            "Get_a_row": [
+                                "Succeeded"
+                            ]
+                        },
+                        "type": "SetVariable"
+                    }
+                },
+                "foreach": "@body('Parse_JSON_from_LA_Query')",
+                "runAfter": {
+                    "Parse_JSON_from_LA_Query": [
+                        "Succeeded"
+                    ]
+                },
+                "type": "Foreach"
+            },
+            "Get_worksheets": {
+                "inputs": {
+                    "host": {
+                        "connection": {
+                            "name": "@parameters('$connections')['excelonlinebusiness']['connectionId']"
+                        }
+                    },
+                    "method": "get",
+                    "path": "/codeless/v1.0/drives/@{encodeURIComponent('b!6AcuKxaXTUmoPIyCHlf6q4cwKsCgaMFFjn_5wZ8vHaZJPUZgA2-AT4POt701jYVk')}/items/@{encodeURIComponent(encodeURIComponent('01HX4BFQHSMCUR4CGMV5EKUSDTOI4TGNZO'))}/workbook/worksheets",
+                    "queries": {
+                        "source": "sites/azimasaservice.sharepoint.com,2b2e07e8-9716-494d-a83c-8c821e57faab,c02a3087-68a0-45c1-8e7f-f9c19f2f1da6"
+                    }
+                },
+                "metadata": {
+                    "01HX4BFQHSMCUR4CGMV5EKUSDTOI4TGNZO": "/IntuneDeviceTagger.xlsx"
+                },
+                "runAfter": {
+                    "Initialize_TenantID": [
+                        "Succeeded"
+                    ]
+                },
+                "type": "ApiConnection"
+            },
+            "Initialize_AppID": {
+                "inputs": {
+                    "variables": [
+                        {
+                            "name": "AppID",
+                            "type": "string",
+                            "value": "36efc86d-bd7b-419e-83e9-7b9e2c643835"
+                        }
+                    ]
+                },
+                "runAfter": {
+                    "Initialize_AppKey": [
+                        "Succeeded"
+                    ]
+                },
+                "type": "InitializeVariable"
+            },
+            "Initialize_AppKey": {
+                "inputs": {
+                    "variables": [
+                        {
+                            "name": "AppKey",
+                            "type": "string",
+                            "value": ""
+                        }
+                    ]
+                },
+                "runAfter": {},
+                "type": "InitializeVariable"
+            },
+            "Initialize_DeviceID": {
+                "inputs": {
+                    "variables": [
+                        {
+                            "name": "DeviceID",
+                            "type": "string"
+                        }
+                    ]
+                },
+                "runAfter": {
+                    "Initialize_DeviceSerialNumber": [
+                        "Succeeded"
+                    ]
+                },
+                "type": "InitializeVariable"
+            },
+            "Initialize_DeviceName": {
+                "inputs": {
+                    "variables": [
+                        {
+                            "name": "DeviceName",
+                            "type": "string"
+                        }
+                    ]
+                },
+                "runAfter": {
+                    "Initialize_ScopeGroupID": [
+                        "Succeeded"
+                    ]
+                },
+                "type": "InitializeVariable"
+            },
+            "Initialize_DeviceSerialNumber": {
+                "inputs": {
+                    "variables": [
+                        {
+                            "name": "DeviceSerialNumber",
+                            "type": "string"
+                        }
+                    ]
+                },
+                "runAfter": {
+                    "Initialize_query": [
+                        "Succeeded"
+                    ]
+                },
+                "type": "InitializeVariable"
+            },
+            "Initialize_EntraDeviceID": {
+                "inputs": {
+                    "variables": [
+                        {
+                            "name": "EntraDeviceID",
+                            "type": "string"
+                        }
+                    ]
+                },
+                "runAfter": {
+                    "Initialize_DeviceName": [
+                        "Succeeded"
+                    ]
+                },
+                "type": "InitializeVariable"
+            },
+            "Initialize_EntraObjectID": {
+                "inputs": {
+                    "variables": [
+                        {
+                            "name": "EntraObjectID",
+                            "type": "string"
+                        }
+                    ]
+                },
+                "runAfter": {
+                    "Initialize_EntraDeviceID": [
+                        "Succeeded"
+                    ]
+                },
+                "type": "InitializeVariable"
+            },
+            "Initialize_IntuneDeviceID": {
+                "inputs": {
+                    "variables": [
+                        {
+                            "name": "IntuneDeviceID",
+                            "type": "string",
+                            "value": "THISISJUNKDATA"
+                        }
+                    ]
+                },
+                "runAfter": {
+                    "Initialize_EntraObjectID": [
+                        "Succeeded"
+                    ]
+                },
+                "type": "InitializeVariable"
+            },
+            "Initialize_ScopeGroupID": {
+                "inputs": {
+                    "variables": [
+                        {
+                            "name": "ScopeGroupID",
+                            "type": "string"
+                        }
+                    ]
+                },
+                "runAfter": {
+                    "Initialize_DeviceID": [
+                        "Succeeded"
+                    ]
+                },
+                "type": "InitializeVariable"
+            },
+            "Initialize_TenantID": {
+                "inputs": {
+                    "variables": [
+                        {
+                            "name": "TenantID",
+                            "type": "string",
+                            "value": "ad7cf5b0-cb57-41c5-99e6-5f8c9ef82e2d"
+                        }
+                    ]
+                },
+                "runAfter": {
+                    "Initialize_AppID": [
+                        "Succeeded"
+                    ]
+                },
+                "type": "InitializeVariable"
+            },
+            "Initialize_loganalyticsworkspaceid": {
+                "inputs": {
+                    "variables": [
+                        {
+                            "name": "loganalyticsworkspaceid",
+                            "type": "string",
+                            "value": "ae8852a9-92d7-4f41-8f88-3195c7a6909b"
+                        }
+                    ]
+                },
+                "runAfter": {
+                    "Get_worksheets": [
+                        "Succeeded"
+                    ]
+                },
+                "type": "InitializeVariable"
+            },
+            "Initialize_query": {
+                "inputs": {
+                    "variables": [
+                        {
+                            "name": "Query",
+                            "type": "string",
+                            "value": "IntuneDevices\n| where OS == \"iOS/iPadOS\"\n| extend todatetime(CreatedDate)\n| where CreatedDate > ago(17d)\n| project SerialNumber,DeviceId"
+                        }
+                    ]
+                },
+                "runAfter": {
+                    "Initialize_loganalyticsworkspaceid": [
+                        "Succeeded"
+                    ]
+                },
+                "type": "InitializeVariable"
+            },
+            "Parse_JSON_from_LA_Query": {
+                "inputs": {
+                    "content": "@body('Run_query_and_list_results')?['value']",
+                    "schema": {
+                        "items": {
+                            "properties": {
+                                "DeviceId": {
+                                    "type": "string"
+                                },
+                                "DeviceName": {
+                                    "type": "string"
+                                },
+                                "SerialNumber": {
+                                    "type": "string"
+                                }
+                            },
+                            "required": [
+                                "SerialNumber",
+                                "DeviceId",
+                                "DeviceName"
+                            ],
+                            "type": "object"
+                        },
+                        "type": "array"
+                    }
+                },
+                "runAfter": {
+                    "Run_query_and_list_results": [
+                        "Succeeded"
+                    ]
+                },
+                "type": "ParseJson"
+            },
+            "Run_query_and_list_results": {
+                "inputs": {
+                    "body": "IntuneDevices\n| where OS == \"iOS/iPadOS\"\n| extend todatetime(CreatedDate)\n| distinct SerialNumber, DeviceId, DeviceName",
+                    "host": {
+                        "connection": {
+                            "name": "@parameters('$connections')['azuremonitorlogs']['connectionId']"
+                        }
+                    },
+                    "method": "post",
+                    "path": "/queryData",
+                    "queries": {
+                        "resourcegroups": "logs-rg",
+                        "resourcename": "azim-logs",
+                        "resourcetype": "Log Analytics Workspace",
+                        "subscriptions": "b49bcaf0-6efe-4ede-9342-602ad3221d68",
+                        "timerange": "Last 7 days"
+                    }
+                },
+                "runAfter": {
+                    "Initialize_IntuneDeviceID": [
+                        "Succeeded"
+                    ]
+                },
+                "type": "ApiConnection"
+            }
+        },
+        "contentVersion": "1.0.0.0",
+        "outputs": {},
+        "parameters": {
+            "$connections": {
+                "defaultValue": {},
+                "type": "Object"
+            }
+        },
+        "triggers": {
+            "Recurrence": {
+                "evaluatedRecurrence": {
+                    "frequency": "Week",
+                    "interval": 3,
+                    "timeZone": "Eastern Standard Time"
+                },
+                "recurrence": {
+                    "frequency": "Week",
+                    "interval": 3,
+                    "timeZone": "Eastern Standard Time"
+                },
+                "type": "Recurrence"
+            }
+        }
+    },
+    "parameters": {
+        "$connections": {
+            "value": {
+                "azuremonitorlogs": {
+                    "connectionId": "/subscriptions/3ac937b4-1278-4501-9873-cf4a2abc3aca/resourceGroups/IntuneDeviceTagger_group/providers/Microsoft.Web/connections/azuremonitorlogs",
+                    "connectionName": "azuremonitorlogs",
+                    "connectionProperties": {
+                        "authentication": {
+                            "type": "ManagedServiceIdentity"
+                        }
+                    },
+                    "id": "/subscriptions/3ac937b4-1278-4501-9873-cf4a2abc3aca/providers/Microsoft.Web/locations/northcentralus/managedApis/azuremonitorlogs"
+                },
+                "excelonlinebusiness": {
+                    "connectionId": "/subscriptions/3ac937b4-1278-4501-9873-cf4a2abc3aca/resourceGroups/IntuneDeviceTagger_group/providers/Microsoft.Web/connections/excelonlinebusiness",
+                    "connectionName": "excelonlinebusiness",
+                    "id": "/subscriptions/3ac937b4-1278-4501-9873-cf4a2abc3aca/providers/Microsoft.Web/locations/northcentralus/managedApis/excelonlinebusiness"
+                }
+            }
+        }
+    }
+}

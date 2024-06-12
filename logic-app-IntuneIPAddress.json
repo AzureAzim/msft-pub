@@ -1,0 +1,313 @@
+{
+  "definition": {
+    "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+    "contentVersion": "1.0.0.0",
+    "triggers": {
+      "Recurrence": {
+        "type": "Recurrence",
+        "recurrence": {
+          "interval": 10,
+          "frequency": "Minute",
+          "timeZone": "US Eastern Standard Time"
+        }
+      }
+    },
+    "actions": {
+      "Run_query_and_list_results": {
+        "type": "ApiConnection",
+        "inputs": {
+          "host": {
+            "connection": {
+              "name": "@parameters('$connections')['azuremonitorlogs']['connectionId']"
+            }
+          },
+          "method": "post",
+          "body": "IntuneDevices\n| project DeviceId,DeviceName,UPN,OS",
+          "path": "/queryData",
+          "queries": {
+            "subscriptions": "",
+            "resourcegroups": "logs-rg",
+            "resourcetype": "Log Analytics Workspace",
+            "resourcename": "azimlab-logs",
+            "timerange": "Last 24 hours"
+          }
+        },
+        "runAfter": {
+          "Initialize_IPAddress": [
+            "Succeeded"
+          ]
+        }
+      },
+      "Initialize_DeviceID": {
+        "type": "InitializeVariable",
+        "inputs": {
+          "variables": [
+            {
+              "name": "DeviceID",
+              "type": "string"
+            }
+          ]
+        },
+        "runAfter": {}
+      },
+      "Initialize_IPAddress": {
+        "type": "InitializeVariable",
+        "inputs": {
+          "variables": [
+            {
+              "name": "IPAddress",
+              "type": "string"
+            }
+          ]
+        },
+        "runAfter": {
+          "Initialize_DeviceID": [
+            "Succeeded"
+          ]
+        }
+      },
+      "For_each_Device_in_KQL_Query": {
+        "type": "Foreach",
+        "foreach": "@body('Run_query_and_list_results')?['value']",
+        "actions": {
+          "Set_DeviceID": {
+            "type": "SetVariable",
+            "inputs": {
+              "name": "DeviceID",
+              "value": "@item()?['DeviceId']"
+            }
+          },
+          "Parse_JSON_for_Device_info": {
+            "type": "ParseJson",
+            "inputs": {
+              "content": "@body('HTTP')",
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "@@odata.context": {
+                    "type": "string"
+                  },
+                  "id": {
+                    "type": "string"
+                  },
+                  "activationLockBypassCode": {},
+                  "iccid": {},
+                  "udid": {},
+                  "roleScopeTagIds": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "ethernetMacAddress": {
+                    "type": "string"
+                  },
+                  "processorArchitecture": {
+                    "type": "string"
+                  },
+                  "physicalMemoryInBytes": {
+                    "type": "integer"
+                  },
+                  "bootstrapTokenEscrowed": {
+                    "type": "boolean"
+                  },
+                  "hardwareInformation": {
+                    "type": "object",
+                    "properties": {
+                      "serialNumber": {
+                        "type": "string"
+                      },
+                      "totalStorageSpace": {
+                        "type": "integer"
+                      },
+                      "freeStorageSpace": {
+                        "type": "integer"
+                      },
+                      "imei": {},
+                      "meid": {},
+                      "manufacturer": {
+                        "type": "string"
+                      },
+                      "model": {
+                        "type": "string"
+                      },
+                      "phoneNumber": {},
+                      "subscriberCarrier": {},
+                      "cellularTechnology": {},
+                      "wifiMac": {},
+                      "operatingSystemLanguage": {
+                        "type": "string"
+                      },
+                      "isSupervised": {
+                        "type": "boolean"
+                      },
+                      "isEncrypted": {
+                        "type": "boolean"
+                      },
+                      "batterySerialNumber": {},
+                      "batteryHealthPercentage": {
+                        "type": "integer"
+                      },
+                      "batteryChargeCycles": {
+                        "type": "integer"
+                      },
+                      "isSharedDevice": {
+                        "type": "boolean"
+                      },
+                      "tpmSpecificationVersion": {
+                        "type": "string"
+                      },
+                      "operatingSystemEdition": {
+                        "type": "string"
+                      },
+                      "deviceFullQualifiedDomainName": {},
+                      "deviceGuardVirtualizationBasedSecurityHardwareRequirementState": {
+                        "type": "string"
+                      },
+                      "deviceGuardVirtualizationBasedSecurityState": {
+                        "type": "string"
+                      },
+                      "deviceGuardLocalSystemAuthorityCredentialGuardState": {
+                        "type": "string"
+                      },
+                      "osBuildNumber": {},
+                      "operatingSystemProductType": {
+                        "type": "integer"
+                      },
+                      "ipAddressV4": {},
+                      "subnetAddress": {},
+                      "esimIdentifier": {},
+                      "systemManagementBIOSVersion": {
+                        "type": "string"
+                      },
+                      "tpmManufacturer": {
+                        "type": "string"
+                      },
+                      "tpmVersion": {
+                        "type": "string"
+                      },
+                      "wiredIPv4Addresses": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      },
+                      "batteryLevelPercentage": {},
+                      "residentUsersCount": {},
+                      "productName": {},
+                      "deviceLicensingStatus": {
+                        "type": "string"
+                      },
+                      "deviceLicensingLastErrorCode": {
+                        "type": "integer"
+                      },
+                      "deviceLicensingLastErrorDescription": {},
+                      "sharedDeviceCachedUsers": {
+                        "type": "array"
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "runAfter": {
+              "HTTP": [
+                "SUCCEEDED"
+              ]
+            }
+          },
+          "Send_Data": {
+            "type": "ApiConnection",
+            "inputs": {
+              "host": {
+                "connection": {
+                  "name": "@parameters('$connections')['azureloganalyticsdatacollector']['connectionId']"
+                }
+              },
+              "method": "post",
+              "body": "{ \"DeviceID\" : \"@{variables('DeviceID')}\",\n\"IPv4Address\":\"@{variables('IPAddress')}\"\n}",
+              "headers": {
+                "Log-Type": "Intune_CL"
+              },
+              "path": "/api/logs"
+            },
+            "runAfter": {
+              "Set_variable": [
+                "SUCCEEDED"
+              ]
+            }
+          },
+          "HTTP": {
+            "type": "Http",
+            "inputs": {
+              "uri": "https://graph.microsoft.com/beta/deviceManagement/manageddevices('@{variables('DeviceID')}')?$select=id,hardwareinformation,activationLockBypassCode,iccid,udid,roleScopeTagIds,ethernetMacAddress,processorArchitecture,physicalMemoryInBytes,bootstrapTokenEscrowed",
+              "method": "GET",
+              "authentication": {
+                "type": "ActiveDirectoryOAuth",
+                "tenant": "",
+                "audience": "https://graph.microsoft.com/",
+                "clientId": "",
+                "secret": "<SECRET REMOVED>"
+              }
+            },
+            "runAfter": {
+              "Set_DeviceID": [
+                "Succeeded"
+              ]
+            },
+            "runtimeConfiguration": {
+              "contentTransfer": {
+                "transferMode": "Chunked"
+              }
+            }
+          },
+          "Set_variable": {
+            "type": "SetVariable",
+            "inputs": {
+              "name": "IPAddress",
+              "value": "@{string(first(body('Parse_JSON_for_Device_info')?['hardwareInformation']?['wiredIPv4Addresses']))}"
+            },
+            "runAfter": {
+              "Parse_JSON_for_Device_info": [
+                "SUCCEEDED"
+              ]
+            }
+          }
+        },
+        "runAfter": {
+          "Run_query_and_list_results": [
+            "Succeeded"
+          ]
+        }
+      }
+    },
+    "outputs": {},
+    "parameters": {
+      "$connections": {
+        "type": "Object",
+        "defaultValue": {}
+      }
+    }
+  },
+  "parameters": {
+    "$connections": {
+      "value": {
+        "azuremonitorlogs": {
+          "id": "/subscriptions//providers/Microsoft.Web/locations/eastus/managedApis/azuremonitorlogs",
+          "connectionId": "/subscriptions//resourceGroups/automation-rg/providers/Microsoft.Web/connections/azuremonitorlogs",
+          "connectionName": "azuremonitorlogs",
+          "connectionProperties": {
+            "authentication": {
+              "type": "ManagedServiceIdentity"
+            }
+          }
+        },
+        "azureloganalyticsdatacollector": {
+          "id": "",
+          "connectionId": "/subscriptions//resourceGroups/automation-rg/providers/Microsoft.Web/connections/azureloganalyticsdatacollector",
+          "connectionName": "azureloganalyticsdatacollector"
+        }
+      }
+    }
+  }
+}

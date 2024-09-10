@@ -1,6 +1,6 @@
 # This folder contains various tools to help people migrate from iBoss (or other tools where they can export structured data) into Entra Global Secure Access.
 
-1. Import-Allow/Deny Rules PS1 is for creating Network Filtering Rules for ENtra Internet Access
+1. Import-Allow/Deny Rules PS1 is for creating Network Filtering Rules for Entra Internet Access
 2. Pac-Parser JS and PS1 are tools for converting PAC (Proxy Auto COnfiguration) files that contain destinations for Proxy Bypass into CSVs that are structured for the purposes of using them to import as Entra Internet Access Network Forwarding rules
 3. Import-PACCSV is a powershell script that will take hte output of the pac parsers and make the networking forwarding rules
 

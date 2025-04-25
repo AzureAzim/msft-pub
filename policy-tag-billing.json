@@ -2,7 +2,7 @@
   "properties": {
     "displayName": "Cost Center Tag Enforcement Policy",
     "policyType": "Custom",
-    "mode": "All",
+    "mode": "Indexed",
     "description": "Requires the user to enter an appropriate Cost Center.  Current Cost Centers Available are listed below.  If your cost center is not listed contact the Cloud Office",
     "metadata": {
       "category": "Tags",

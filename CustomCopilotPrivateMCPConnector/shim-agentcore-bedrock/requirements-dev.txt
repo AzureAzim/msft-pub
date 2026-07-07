@@ -1,0 +1,8 @@
+pytest==8.3.3
+pytest-asyncio==0.24.0
+# botocore.stub.Stubber ships inside botocore (a boto3 dependency) -- no extra
+# package needed for mocking bedrock-agentcore calls in tests.
+
+# Static validation for infra/cloudformation/*.yaml (no AWS credentials needed).
+cfn-lint>=1.0.0
+

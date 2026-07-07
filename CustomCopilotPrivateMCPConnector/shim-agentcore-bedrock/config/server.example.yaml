@@ -1,0 +1,58 @@
+# Example single-server registry for the AgentCore MCP shim (Variant A2).
+#
+# Copy this file to server.yaml (or point SHIM_CONFIG_PATH at your own copy)
+# and fill in the values for your environment. Secrets (passwords, client
+# secrets) are referenced by environment variable name here, never inlined.
+
+serverId: agentcore-mcp
+displayName: "Example MCP server on Bedrock AgentCore"
+
+aws:
+  region: us-east-1
+  # Full ARN of the AgentCore Runtime hosting your MCP server container.
+  agentRuntimeArn: "arn:aws:bedrock-agentcore:us-east-1:123456789012:runtime/my_mcp_server-abc123"
+  qualifier: DEFAULT
+  # Leave endpointUrl unset in real deployments -- see app/config.py for why.
+  endpointUrl: null
+
+mcp:
+  protocolVersion: "2025-06-18"
+  stateless: true
+  sessionIdleTtlMinutes: 10
+  requestTimeoutSeconds: 30
+  maxResponseBytes: 8388608
+
+auth:
+  callerAcceptedTypes:
+    - oauthEntraId
+    - basic
+  basic:
+    usernameEnv: SHIM_BASIC_USERNAME
+    passwordEnv: SHIM_BASIC_PASSWORD
+  oauthEntraId:
+    tenantId: "00000000-0000-0000-0000-000000000000"
+    audience: "api://custom-mcp-proxy"
+
+allowedCapabilities:
+  tools:
+    - name: getCustomerBalance
+      idempotent: true
+      timeoutSeconds: 30
+      maxResponseBytes: 262144
+      allowedCallers:
+        - "*"
+      redactArguments:
+        - customerTaxId
+    - name: createSupportTicket
+      idempotent: false
+      timeoutSeconds: 45
+      maxResponseBytes: 65536
+      allowedCallers:
+        - "*"
+      redactArguments: []
+  resources: []
+  prompts: []
+
+audit:
+  localPath: /var/log/mcp-shim/audit.log
+  forwardToSiem: false

@@ -1,0 +1,76 @@
+# Test-only single-server registry. Uses "basic" caller auth exclusively so
+# the test suite never needs network access to an Entra ID JWKS endpoint.
+serverId: test-server
+displayName: "Test MCP server"
+
+aws:
+  region: us-east-1
+  agentRuntimeArn: "arn:aws:bedrock-agentcore:us-east-1:123456789012:runtime/test-abc123"
+  qualifier: DEFAULT
+  endpointUrl: null
+
+mcp:
+  protocolVersion: "2025-06-18"
+  stateless: true
+  sessionIdleTtlMinutes: 10
+  requestTimeoutSeconds: 30
+  maxResponseBytes: 8388608
+
+auth:
+  callerAcceptedTypes:
+    - basic
+  basic:
+    usernameEnv: SHIM_BASIC_USERNAME
+    passwordEnv: SHIM_BASIC_PASSWORD
+
+allowedCapabilities:
+  tools:
+    - name: echoTool
+      idempotent: true
+      timeoutSeconds: 30
+      maxResponseBytes: 65536
+      allowedCallers:
+        - "*"
+      redactArguments:
+        - secret
+    - name: adminOnlyTool
+      idempotent: false
+      timeoutSeconds: 30
+      maxResponseBytes: 65536
+      allowedCallers:
+        - only-admin-user
+      redactArguments: []
+    - name: failingTool
+      idempotent: true
+      timeoutSeconds: 30
+      maxResponseBytes: 65536
+      allowedCallers:
+        - "*"
+      redactArguments: []
+    - name: protocolErrorTool
+      idempotent: true
+      timeoutSeconds: 30
+      maxResponseBytes: 65536
+      allowedCallers:
+        - "*"
+      redactArguments: []
+  resources:
+    - name: "res://example"
+      idempotent: true
+      timeoutSeconds: 30
+      maxResponseBytes: 65536
+      allowedCallers:
+        - "*"
+      redactArguments: []
+  prompts:
+    - name: examplePrompt
+      idempotent: true
+      timeoutSeconds: 30
+      maxResponseBytes: 65536
+      allowedCallers:
+        - "*"
+      redactArguments: []
+
+audit:
+  localPath: "./.test-artifacts/audit.log"
+  forwardToSiem: false

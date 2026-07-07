@@ -1,0 +1,11 @@
+# boto3/botocore must be new enough to include the bedrock-agentcore service
+# model. Verified: 1.37.0 does NOT have it, 1.40.0 does. Pin a floor, not an
+# exact version, since this is a fast-moving, recently added AWS service.
+fastapi==0.115.0
+uvicorn[standard]==0.30.6
+boto3>=1.40.0
+pydantic==2.9.2
+PyYAML==6.0.2
+jsonschema==4.23.0
+python-jose[cryptography]==3.3.0
+httpx==0.27.2

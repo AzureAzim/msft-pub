@@ -1,0 +1,285 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: >
+  Variant A2 thin MCP adapter (shim) fronting an Amazon Bedrock AgentCore
+  Runtime MCP server. Provisions the PrivateLink interface VPC endpoint for
+  bedrock-agentcore data-plane calls, least-privilege IAM roles, and an ECS
+  Fargate service behind an internal Network Load Balancer. See
+  docs/a2-howto-agentcore-bedrock.md for the full deployment walkthrough.
+  This template assumes a VPC with private connectivity back to your
+  on-premises network (Direct Connect or Site-to-Site VPN) already exists.
+
+Parameters:
+  VpcId:
+    Type: AWS::EC2::VPC::Id
+    Description: VPC that has (or will have) private connectivity to your on-premises network.
+
+  PrivateSubnetIds:
+    Type: List<AWS::EC2::Subnet::Id>
+    Description: >
+      Private subnets (no direct internet route required) used for both the
+      PrivateLink interface endpoint and the ECS Fargate tasks. Provide at
+      least two, in different Availability Zones, for high availability.
+
+  OnPremCidr:
+    Type: String
+    Description: >
+      CIDR block of the on-premises network that reaches this VPC over
+      Direct Connect or a Site-to-Site VPN. The shim's security group only
+      allows inbound traffic on the shim port from this range.
+    AllowedPattern: ^(\d{1,3}\.){3}\d{1,3}/\d{1,2}$
+
+  AgentRuntimeArn:
+    Type: String
+    Description: Full ARN of the Amazon Bedrock AgentCore Runtime hosting the MCP server.
+    AllowedPattern: ^arn:aws[a-zA-Z-]*:bedrock-agentcore:[a-z0-9-]+:\d{12}:runtime/.+$
+
+  ImageUri:
+    Type: String
+    Description: >
+      Full ECR image URI for the shim container (e.g.
+      123456789012.dkr.ecr.us-east-1.amazonaws.com/agentcore-mcp-shim:1.0.0).
+
+  ShimConfigSecretArn:
+    Type: String
+    Description: >
+      ARN of a Secrets Manager secret whose value is the full server.yaml
+      contents for this deployment. Injected into the container as the
+      SHIM_CONFIG_YAML environment variable -- see app/config.py.
+
+  ShimPort:
+    Type: Number
+    Default: 8080
+
+  ContainerCpu:
+    Type: Number
+    Default: 512
+    Description: Fargate task CPU units (256, 512, 1024, ...).
+
+  ContainerMemory:
+    Type: Number
+    Default: 1024
+    Description: Fargate task memory in MiB.
+
+  DesiredCount:
+    Type: Number
+    Default: 2
+    Description: Number of shim tasks to run. Use at least 2 across AZs for HA.
+
+  LogRetentionDays:
+    Type: Number
+    Default: 30
+
+Resources:
+  # ---------------------------------------------------------------------
+  # PrivateLink: keeps every shim -> AgentCore Runtime call on AWS's
+  # private network instead of the public bedrock-agentcore endpoint.
+  # ---------------------------------------------------------------------
+  VpcEndpointSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Allows the shim tasks to reach the bedrock-agentcore PrivateLink endpoint on 443.
+      VpcId: !Ref VpcId
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+          SourceSecurityGroupId: !Ref EcsTaskSecurityGroup
+      Tags:
+        - Key: Name
+          Value: agentcore-mcp-shim-vpce-sg
+
+  BedrockAgentCoreVpcEndpoint:
+    Type: AWS::EC2::VPCEndpoint
+    Properties:
+      VpcId: !Ref VpcId
+      ServiceName: !Sub com.amazonaws.${AWS::Region}.bedrock-agentcore
+      VpcEndpointType: Interface
+      PrivateDnsEnabled: true
+      SubnetIds: !Ref PrivateSubnetIds
+      SecurityGroupIds:
+        - !Ref VpcEndpointSecurityGroup
+
+  # ---------------------------------------------------------------------
+  # IAM: least-privilege task role scoped to exactly one AgentCore Runtime
+  # ARN, separate from the task execution role used to pull the image and
+  # write logs.
+  # ---------------------------------------------------------------------
+  TaskExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ecs-tasks.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy
+      Policies:
+        - PolicyName: ReadShimConfigSecret
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action: secretsmanager:GetSecretValue
+                Resource: !Ref ShimConfigSecretArn
+
+  TaskRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ecs-tasks.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: InvokeAgentCoreRuntime
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Sid: InvokeConfiguredRuntimeOnly
+                Effect: Allow
+                Action: bedrock-agentcore:InvokeAgentRuntime
+                Resource: !Ref AgentRuntimeArn
+              # Deliberately NOT granted: bedrock-agentcore:InvokeAgentRuntimeForUser.
+              # This shim authenticates callers itself and does not pass the
+              # X-Amzn-Bedrock-AgentCore-Runtime-User-Id header -- see
+              # docs/variant-a2-thin-mcp-adapter-spec.md#authentication-model.
+
+  # ---------------------------------------------------------------------
+  # Networking for the ECS tasks themselves.
+  # ---------------------------------------------------------------------
+  EcsTaskSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Allows the on-premises CIDR to reach the shim; allows all outbound (443 to PrivateLink, etc).
+      VpcId: !Ref VpcId
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: !Ref ShimPort
+          ToPort: !Ref ShimPort
+          CidrIp: !Ref OnPremCidr
+      Tags:
+        - Key: Name
+          Value: agentcore-mcp-shim-ecs-sg
+
+  LogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: /ecs/agentcore-mcp-shim
+      RetentionInDays: !Ref LogRetentionDays
+
+  EcsCluster:
+    Type: AWS::ECS::Cluster
+    Properties:
+      ClusterName: agentcore-mcp-shim
+      ClusterSettings:
+        - Name: containerInsights
+          Value: enabled
+
+  TaskDefinition:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      Family: agentcore-mcp-shim
+      RequiresCompatibilities:
+        - FARGATE
+      NetworkMode: awsvpc
+      Cpu: !Ref ContainerCpu
+      Memory: !Ref ContainerMemory
+      ExecutionRoleArn: !GetAtt TaskExecutionRole.Arn
+      TaskRoleArn: !GetAtt TaskRole.Arn
+      ContainerDefinitions:
+        - Name: shim
+          Image: !Ref ImageUri
+          Essential: true
+          PortMappings:
+            - ContainerPort: !Ref ShimPort
+              Protocol: tcp
+          Secrets:
+            - Name: SHIM_CONFIG_YAML
+              ValueFrom: !Ref ShimConfigSecretArn
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-group: !Ref LogGroup
+              awslogs-region: !Ref AWS::Region
+              awslogs-stream-prefix: shim
+
+  # ---------------------------------------------------------------------
+  # Internal NLB: stable private endpoint for the on-premises data gateway
+  # to target, independent of individual task IPs across deploys/scaling.
+  # ---------------------------------------------------------------------
+  InternalNlb:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    Properties:
+      Name: agentcore-mcp-shim-nlb
+      Type: network
+      Scheme: internal
+      Subnets: !Ref PrivateSubnetIds
+
+  TargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      Name: agentcore-mcp-shim-tg
+      Port: !Ref ShimPort
+      Protocol: TCP
+      TargetType: ip
+      VpcId: !Ref VpcId
+      HealthCheckProtocol: HTTP
+      HealthCheckPath: /health
+      HealthCheckIntervalSeconds: 15
+      HealthyThresholdCount: 2
+      UnhealthyThresholdCount: 3
+
+  Listener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      LoadBalancerArn: !Ref InternalNlb
+      Port: !Ref ShimPort
+      Protocol: TCP
+      DefaultActions:
+        - Type: forward
+          TargetGroupArn: !Ref TargetGroup
+
+  EcsService:
+    Type: AWS::ECS::Service
+    DependsOn: Listener
+    Properties:
+      Cluster: !Ref EcsCluster
+      ServiceName: agentcore-mcp-shim
+      TaskDefinition: !Ref TaskDefinition
+      DesiredCount: !Ref DesiredCount
+      LaunchType: FARGATE
+      NetworkConfiguration:
+        AwsvpcConfiguration:
+          AssignPublicIp: DISABLED
+          Subnets: !Ref PrivateSubnetIds
+          SecurityGroups:
+            - !Ref EcsTaskSecurityGroup
+      LoadBalancers:
+        - ContainerName: shim
+          ContainerPort: !Ref ShimPort
+          TargetGroupArn: !Ref TargetGroup
+      HealthCheckGracePeriodSeconds: 30
+
+Outputs:
+  NlbDnsName:
+    Description: >
+      Private DNS name the on-premises data gateway's custom connector
+      connection should target (over Direct Connect/VPN).
+    Value: !GetAtt InternalNlb.DNSName
+
+  EcsClusterName:
+    Value: !Ref EcsCluster
+
+  TaskDefinitionArn:
+    Value: !Ref TaskDefinition
+
+  VpcEndpointId:
+    Description: >
+      PrivateLink interface endpoint id for com.amazonaws.<region>.bedrock-agentcore.
+      Confirm this appears healthy before troubleshooting shim connectivity.
+    Value: !Ref BedrockAgentCoreVpcEndpoint

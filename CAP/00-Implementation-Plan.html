@@ -1,0 +1,785 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Conditional Access Device Compliance Rollout Implementation Plan</title>
+  <style>
+:root {
+  color-scheme: light;
+}
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+  padding: 2rem 1.25rem 4rem;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+  line-height: 1.65;
+  color: #1f2328;
+  background: #ffffff;
+}
+main {
+  max-width: 900px;
+  margin: 0 auto;
+}
+h1, h2, h3, h4, h5, h6 {
+  line-height: 1.25;
+  margin-top: 1.75em;
+  margin-bottom: 0.6em;
+  color: #0f172a;
+}
+h1 {
+  margin-top: 0;
+  font-size: 2rem;
+  border-bottom: 1px solid #d0d7de;
+  padding-bottom: 0.3em;
+}
+h2 {
+  font-size: 1.5rem;
+  border-bottom: 1px solid #d8dee4;
+  padding-bottom: 0.25em;
+}
+h3 {
+  font-size: 1.2rem;
+}
+p, ul, ol, table, pre, blockquote {
+  margin-top: 0;
+  margin-bottom: 1rem;
+}
+ul, ol {
+  padding-left: 1.5rem;
+}
+li + li {
+  margin-top: 0.25rem;
+}
+a {
+  color: #0969da;
+}
+a:hover {
+  text-decoration: underline;
+}
+hr {
+  border: 0;
+  border-top: 1px solid #d8dee4;
+  margin: 2rem 0;
+}
+code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+  font-size: 0.95em;
+}
+p code, li code, td code, th code {
+  background: #f6f8fa;
+  padding: 0.15em 0.35em;
+  border-radius: 6px;
+}
+pre {
+  background: #f6f8fa;
+  padding: 1rem;
+  border: 1px solid #d0d7de;
+  border-radius: 8px;
+  overflow-x: auto;
+}
+pre code {
+  background: transparent;
+  padding: 0;
+}
+blockquote {
+  margin-left: 0;
+  padding: 0.25rem 1rem;
+  color: #57606a;
+  border-left: 4px solid #d0d7de;
+  background: #f6f8fa;
+}
+table {
+  width: 100%;
+  border-collapse: collapse;
+  display: block;
+  overflow-x: auto;
+}
+th, td {
+  border: 1px solid #d0d7de;
+  padding: 0.6rem 0.75rem;
+  text-align: left;
+  vertical-align: top;
+}
+th {
+  background: #f6f8fa;
+}
+strong {
+  font-weight: 600;
+}
+img {
+  max-width: 100%;
+}
+  </style>
+</head>
+<body>
+  <main>
+<h1 id="conditional-access-device-compliance-rollout-implementation-plan">Conditional Access Device Compliance Rollout Implementation Plan</h1>
+<h2 id="executive-summary">Executive Summary</h2>
+<p>This implementation plan describes a phased rollout of Microsoft Entra Conditional Access (CA) using the grant control <strong>Require device to be marked as compliant</strong>. The objective is to ensure that only devices meeting defined security and management standards can access targeted Microsoft 365 and enterprise applications. The rollout assumes managed Windows devices are enrolled in Microsoft Intune and are either Microsoft Entra joined, hybrid Microsoft Entra joined, or otherwise able to report compliance state into Entra ID.</p>
+<p>The recommended approach is to establish clean compliance baselines first, pilot the policy with a limited group, expand in production rings, and only then enforce Conditional Access. The plan includes risk controls, break-glass protections, operational monitoring, and success metrics so the organization can reduce lockout risk while steadily improving device security posture.</p>
+<h2 id="goal-and-scope">1. Goal and Scope</h2>
+<h3 id="goal">1.1 Goal</h3>
+<p>Implement Microsoft Entra Conditional Access policies that allow access only from devices that are:</p>
+<ul>
+<li>enrolled in Microsoft Intune,</li>
+<li>evaluated against required compliance policies, and</li>
+<li>marked as <strong>Compliant</strong> in Microsoft Entra ID / Intune.</li>
+</ul>
+<h3 id="what-require-device-to-be-marked-as-compliant-means">1.2 What “Require device to be marked as compliant” means</h3>
+<p>Under Conditional Access, the grant control <strong>Require device to be marked as compliant</strong> means:</p>
+<ul>
+<li>a user must sign in from a device whose current compliance state is reported as compliant,</li>
+<li>the compliance decision is based on Intune device compliance evaluation,</li>
+<li>a non-compliant, inactive, unknown, or unmanaged device is denied access to in-scope cloud apps unless another allowed path or exclusion applies.</li>
+</ul>
+<p>This is not just a device registration check. The device must both exist as a managed identity in Entra ID and pass the applicable Intune compliance policies.</p>
+<h3 id="scope">1.3 Scope</h3>
+<p>This plan covers:</p>
+<ul>
+<li>Windows device compliance rollout using Intune + Entra Conditional Access,</li>
+<li>pilot and staged production enforcement,</li>
+<li>operational monitoring and remediation processes,</li>
+<li>references to both built-in and custom compliance policies authored in parallel.</li>
+</ul>
+<h3 id="assumptions">1.4 Assumptions</h3>
+<p>The plan assumes:</p>
+<ul>
+<li>target devices are already enrolled in Microsoft Intune,</li>
+<li>devices are Microsoft Entra joined or hybrid Microsoft Entra joined,</li>
+<li>users authenticate to Microsoft Entra ID-backed apps such as Microsoft 365 or other enterprise SaaS apps,</li>
+<li>compliance evaluation can be reported consistently to Entra ID,</li>
+<li>emergency access accounts will be excluded from CA enforcement.</li>
+</ul>
+<h3 id="out-of-scope">1.5 Out of Scope</h3>
+<p>Unless separately approved, this document does not define:</p>
+<ul>
+<li>mobile-platform-specific rollout details for iOS/iPadOS or Android,</li>
+<li>full device enrollment project workstreams,</li>
+<li>app protection policy design,</li>
+<li>non-Entra identity providers,</li>
+<li>remediation scripts or packaging details for endpoint agents.</li>
+</ul>
+<h2 id="prerequisites">2. Prerequisites</h2>
+<h3 id="licensing">2.1 Licensing</h3>
+<p>At minimum, confirm the following licenses are available for all in-scope users/devices:</p>
+<table>
+<thead>
+<tr>
+<th>Requirement</th>
+<th>Purpose</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Microsoft Entra ID P1</td>
+<td>Conditional Access</td>
+<td>Required for CA targeting and enforcement</td>
+</tr>
+<tr>
+<td>Microsoft Intune</td>
+<td>Device compliance + device management</td>
+<td>Required to evaluate and publish compliance state</td>
+</tr>
+<tr>
+<td>Windows licensing as applicable</td>
+<td>OS support and security features</td>
+<td>Confirm supported editions for BitLocker and Secure Boot</td>
+</tr>
+<tr>
+<td>Any required security tool licensing</td>
+<td>Custom compliance dependencies</td>
+<td>Needed for SentinelOne deployment/telemetry if in scope</td>
+</tr>
+</tbody>
+</table>
+<h3 id="technical-preconditions">2.2 Technical Preconditions</h3>
+<p>Validate these conditions before pilot:</p>
+<ul>
+<li>Devices are successfully enrolled in Intune.</li>
+<li>Devices appear in both Intune and Entra ID with stable device identities.</li>
+<li>Primary users are assigned correctly where required.</li>
+<li>Time sync, OS supportability, and connectivity to Intune service endpoints are healthy.</li>
+<li>Existing access policies are inventoried to avoid policy conflicts.</li>
+</ul>
+<h3 id="required-groups">2.3 Required Groups</h3>
+<p>Create and validate the following groups before rollout:</p>
+<table>
+<thead>
+<tr>
+<th>Group</th>
+<th>Purpose</th>
+<th>Recommended Type</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>CA-DeviceCompliance-Pilot</td>
+<td>Early validation with selected users/devices</td>
+<td>Entra security group</td>
+</tr>
+<tr>
+<td>CA-DeviceCompliance-Ring1</td>
+<td>First production ring</td>
+<td>Entra security group</td>
+</tr>
+<tr>
+<td>CA-DeviceCompliance-Ring2</td>
+<td>Second production ring</td>
+<td>Entra security group</td>
+</tr>
+<tr>
+<td>CA-DeviceCompliance-Ring3</td>
+<td>Broad production ring</td>
+<td>Entra security group</td>
+</tr>
+<tr>
+<td>CA-DeviceCompliance-Exclusions</td>
+<td>Temporary operational exclusions</td>
+<td>Entra security group</td>
+</tr>
+<tr>
+<td>CA-BreakGlass-Accounts</td>
+<td>Emergency access accounts excluded from CA</td>
+<td>Entra security group with strict ownership</td>
+</tr>
+</tbody>
+</table>
+<h3 id="administrative-readiness">2.4 Administrative Readiness</h3>
+<p>Confirm:</p>
+<ul>
+<li>named owners for Entra CA, Intune compliance, endpoint engineering, IAM, helpdesk, and communications,</li>
+<li>documented change window and approval path,</li>
+<li>helpdesk runbook for common remediation failures,</li>
+<li>sign-in log monitoring access for responders.</li>
+</ul>
+<h2 id="compliance-policy-inputs">3. Compliance Policy Inputs</h2>
+<p>Two compliance policy workstreams are expected to feed this rollout:</p>
+<ol>
+<li><code>CAP\01-Compliance-Policy-BitLocker-SecureBoot.md</code>
+<ul>
+<li>Built-in device compliance policy requiring BitLocker and Secure Boot.</li>
+</ul>
+</li>
+<li><code>CAP\02-Custom-Compliance-SentinelOne\</code>
+<ul>
+<li>Custom compliance policy verifying SentinelOne is installed and active.</li>
+</ul>
+</li>
+</ol>
+<p>These artifacts should be treated as detailed control definitions that support the overall CA enforcement plan in this document.</p>
+<h2 id="phased-rollout-plan">4. Phased Rollout Plan</h2>
+<h3 id="phase-0-discovery-and-inventory">Phase 0 – Discovery and Inventory</h3>
+<p><strong>Objective:</strong> Understand current posture before creating enforcement risk.</p>
+<h4 id="activities">Activities</h4>
+<ul>
+<li>Inventory enrolled device count from Intune.</li>
+<li>Segment by OS/version/build, ownership type, join type, and business unit.</li>
+<li>Measure current compliance state: compliant, non-compliant, not evaluated, inactive.</li>
+<li>Identify devices missing prerequisites such as BitLocker, Secure Boot, or SentinelOne.</li>
+<li>Review sign-in patterns to determine which apps and user populations should be targeted first.</li>
+<li>Identify privileged/admin populations that require stricter change control.</li>
+</ul>
+<h4 id="deliverables">Deliverables</h4>
+<ul>
+<li>Baseline device inventory report.</li>
+<li>Compliance gap analysis.</li>
+<li>Initial pilot candidate list.</li>
+<li>Exception candidates list (shared kiosks, lab devices, specialized systems if applicable).</li>
+</ul>
+<h4 id="example-discovery-outputs">Example discovery outputs</h4>
+<table>
+<thead>
+<tr>
+<th>Metric</th>
+<th>Example Output</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Total enrolled devices</td>
+<td>Count by platform and join type</td>
+</tr>
+<tr>
+<td>Compliant percentage</td>
+<td>Current baseline by business unit</td>
+</tr>
+<tr>
+<td>Top failure reasons</td>
+<td>BitLocker off, Secure Boot off, agent missing, stale check-in</td>
+</tr>
+<tr>
+<td>Users at risk</td>
+<td>Number of active users on non-compliant devices</td>
+</tr>
+</tbody>
+</table>
+<h3 id="phase-1-create-compliance-policies-in-audit-report-only-mode">Phase 1 – Create Compliance Policies in Audit / Report-Only Mode</h3>
+<p><strong>Objective:</strong> Define the compliance requirements and observe impact before enforcement.</p>
+<h4 id="activities-1">Activities</h4>
+<ul>
+<li>Create and assign the built-in compliance policy described in <code>CAP\01-Compliance-Policy-BitLocker-SecureBoot.md</code>.</li>
+<li>Create and validate the custom compliance policy described in <code>CAP\02-Custom-Compliance-SentinelOne\</code>.</li>
+<li>Assign policies initially to pilot devices/users or a representative sample.</li>
+<li>Tune compliance evaluation schedules and grace periods where appropriate.</li>
+<li>Create dashboards or reports for policy evaluation results.</li>
+<li>If Conditional Access policy objects are created at this stage, keep them in <strong>Report-only</strong> mode.</li>
+</ul>
+<h4 id="key-validation-questions">Key validation questions</h4>
+<ul>
+<li>Are devices evaluating reliably and within expected time windows?</li>
+<li>Do hardware limitations or BIOS settings create false failures?</li>
+<li>Does SentinelOne detection produce consistent compliant/non-compliant outcomes?</li>
+<li>Are stale or duplicate device records distorting results?</li>
+</ul>
+<h4 id="exit-criteria">Exit criteria</h4>
+<ul>
+<li>Compliance policies evaluate successfully for pilot population.</li>
+<li>Failure reasons are understood and documented.</li>
+<li>No major false-positive pattern remains unresolved.</li>
+</ul>
+<h3 id="phase-2-pilot-group-rollout-with-monitoring">Phase 2 – Pilot Group Rollout with Monitoring</h3>
+<p><strong>Objective:</strong> Validate end-user impact with a controlled population.</p>
+<h4 id="scope-1">Scope</h4>
+<p>Target <code>CA-DeviceCompliance-Pilot</code> with:</p>
+<ul>
+<li>a representative cross-section of business users,</li>
+<li>a small number of IT/helpdesk users,</li>
+<li>known hardware variations,</li>
+<li>low-risk apps first where practical.</li>
+</ul>
+<h4 id="activities-2">Activities</h4>
+<ul>
+<li>Enable CA in <strong>Report-only</strong> first for the pilot scope.</li>
+<li>Review Entra sign-in logs for would-be blocks.</li>
+<li>Remediate non-compliant pilot devices before moving to enforcement.</li>
+<li>Communicate pilot expectations, support path, and self-remediation steps.</li>
+<li>After a stable observation period, switch pilot CA policy from Report-only to On for pilot users/apps.</li>
+</ul>
+<h4 id="monitoring-focus">Monitoring focus</h4>
+<ul>
+<li>Sign-in failures due to non-compliance.</li>
+<li>Time to remediate per failed user/device.</li>
+<li>Repeat offenders and root causes.</li>
+<li>Service desk ticket volume.</li>
+</ul>
+<h4 id="exit-criteria-1">Exit criteria</h4>
+<ul>
+<li>Pilot compliance rate reaches agreed threshold (for example, &gt;=95%).</li>
+<li>Break/fix runbook proven with real incidents.</li>
+<li>No critical business workflow blocked without workaround.</li>
+</ul>
+<h3 id="phase-3-staged-production-rollout-rings">Phase 3 – Staged Production Rollout (Rings)</h3>
+<p><strong>Objective:</strong> Expand enforcement safely using progressive rings.</p>
+<h4 id="recommended-ring-model">Recommended ring model</h4>
+<table>
+<thead>
+<tr>
+<th>Ring</th>
+<th>Population</th>
+<th style="text-align: right;">Suggested Size</th>
+<th>Goal</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Ring 1</td>
+<td>IT / technically prepared users</td>
+<td style="text-align: right;">5-10%</td>
+<td>Validate at scale with strong support coverage</td>
+</tr>
+<tr>
+<td>Ring 2</td>
+<td>Early adopter business units</td>
+<td style="text-align: right;">15-25%</td>
+<td>Prove business-process compatibility</td>
+</tr>
+<tr>
+<td>Ring 3</td>
+<td>Remaining standard users</td>
+<td style="text-align: right;">60-80%</td>
+<td>Broad rollout</td>
+</tr>
+<tr>
+<td>Ring 4 (optional)</td>
+<td>High-risk or special cases after remediation</td>
+<td style="text-align: right;">Variable</td>
+<td>Close long-tail gaps</td>
+</tr>
+</tbody>
+</table>
+<h4 id="activities-3">Activities</h4>
+<ul>
+<li>Move one ring at a time after reviewing prior ring metrics.</li>
+<li>Keep an active exclusion group for temporary short-term exceptions only.</li>
+<li>Use change windows and clear go/no-go checkpoints between rings.</li>
+<li>Review app-specific impacts, especially on legacy auth, shared devices, and privileged workflows.</li>
+<li>Escalate unresolved patterns to endpoint engineering or security engineering before proceeding.</li>
+</ul>
+<h4 id="ring-readiness-criteria">Ring readiness criteria</h4>
+<ul>
+<li>Prior ring stable for at least 5 business days.</li>
+<li>No unresolved Sev A / Sev B business impact.</li>
+<li>Sign-in block trend understood and declining.</li>
+<li>Helpdesk capacity remains within expected volume.</li>
+</ul>
+<h3 id="phase-4-enforce-via-conditional-access">Phase 4 – Enforce via Conditional Access</h3>
+<p><strong>Objective:</strong> Turn policy into a security control that blocks access from non-compliant devices.</p>
+<h4 id="conditional-access-design-guidance">Conditional Access design guidance</h4>
+<p>Recommended CA design elements:</p>
+<ul>
+<li><strong>Users:</strong> include targeted user groups/rings.</li>
+<li><strong>Exclude:</strong> <code>CA-BreakGlass-Accounts</code> and tightly governed operational exclusions.</li>
+<li><strong>Cloud apps:</strong> start with Microsoft 365 and business-critical apps in scope; expand deliberately.</li>
+<li><strong>Conditions:</strong> consider supported platforms and client apps; avoid unnecessary complexity in first release.</li>
+<li><strong>Grant:</strong> <strong>Require device to be marked as compliant</strong>.</li>
+<li><strong>Session controls:</strong> optional, only if separately justified.</li>
+</ul>
+<h4 id="enforcement-steps">Enforcement steps</h4>
+<ol>
+<li>Confirm compliance policy health.</li>
+<li>Confirm break-glass accounts are tested and excluded.</li>
+<li>Turn CA policy from Report-only to On for approved ring.</li>
+<li>Monitor Entra sign-in logs and Intune compliance reports daily during rollout.</li>
+<li>Document issues, exceptions, and remediations.</li>
+</ol>
+<h4 id="log-sources-to-monitor">Log sources to monitor</h4>
+<ul>
+<li>Entra sign-in logs.</li>
+<li>Conditional Access insights/reporting workbook.</li>
+<li>Intune device compliance reports.</li>
+<li>Helpdesk incident queue.</li>
+<li>Endpoint security telemetry where available.</li>
+</ul>
+<h3 id="phase-5-steady-state-operations">Phase 5 – Steady-State Operations</h3>
+<p><strong>Objective:</strong> Sustain compliance and manage drift.</p>
+<h4 id="ongoing-activities">Ongoing activities</h4>
+<ul>
+<li>Daily/weekly review of compliance drift and newly non-compliant devices.</li>
+<li>Monthly review of exclusion group membership.</li>
+<li>Quarterly review of compliance policy thresholds and security standards.</li>
+<li>Ongoing monitoring for stale devices and duplicate records.</li>
+<li>Measure remediation SLA and repeat failure patterns.</li>
+<li>Update user communication and helpdesk content as the process matures.</li>
+</ul>
+<h4 id="exception-process">Exception process</h4>
+<p>Define a formal exception workflow:</p>
+<ul>
+<li>business justification,</li>
+<li>named owner,</li>
+<li>risk approval,</li>
+<li>time-bound expiration,</li>
+<li>compensating controls,</li>
+<li>periodic review and automatic removal where possible.</li>
+</ul>
+<h2 id="risk-and-mitigation">5. Risk and Mitigation</h2>
+<table>
+<thead>
+<tr>
+<th>Risk</th>
+<th>Impact</th>
+<th>Mitigation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Misconfigured CA policy causes broad lockout</td>
+<td>High</td>
+<td>Use Report-only first, pilot first, stage by rings, validate exclusions</td>
+</tr>
+<tr>
+<td>Break-glass accounts not excluded or untested</td>
+<td>High</td>
+<td>Maintain at least two emergency accounts, exclude them, test sign-in regularly</td>
+</tr>
+<tr>
+<td>Devices fail compliance unexpectedly</td>
+<td>Medium/High</td>
+<td>Baseline discovery, remediation guidance, helpdesk runbooks, ring pauses</td>
+</tr>
+<tr>
+<td>False non-compliance due to stale device state</td>
+<td>Medium</td>
+<td>Validate sync cadence, retire stale records, confirm check-in health</td>
+</tr>
+<tr>
+<td>Helpdesk overload at enforcement</td>
+<td>Medium</td>
+<td>Pre-brief service desk, prepare KB articles, increase staffing during cutover</td>
+</tr>
+<tr>
+<td>Custom compliance dependency fails (SentinelOne state)</td>
+<td>Medium</td>
+<td>Validate detection logic early, test on diverse hardware, define fallback/support path</td>
+</tr>
+<tr>
+<td>Executive or privileged admin lockout</td>
+<td>High</td>
+<td>Separate pilot handling, dedicated communications, confirmed emergency access path</td>
+</tr>
+<tr>
+<td>Exception sprawl weakens control</td>
+<td>Medium</td>
+<td>Time-box exceptions, require approvals, review monthly</td>
+</tr>
+</tbody>
+</table>
+<h3 id="break-glass-requirements">Break-Glass Requirements</h3>
+<ul>
+<li>Maintain at least two cloud-only emergency access accounts.</li>
+<li>Store credentials securely per organizational standard.</li>
+<li>Exclude them from all device-compliance CA policies.</li>
+<li>Test them on a scheduled basis and log results.</li>
+<li>Prevent everyday use; monitor all sign-ins.</li>
+</ul>
+<h3 id="communication-plan">Communication Plan</h3>
+<p>Communications should occur at least at these points:</p>
+<ul>
+<li><strong>Pre-pilot:</strong> explain objective, expected prompts, remediation steps, support contacts.</li>
+<li><strong>Pre-ring rollout:</strong> notify impacted groups with dates and self-check instructions.</li>
+<li><strong>Day of enforcement:</strong> reminder plus known-issues/support channels.</li>
+<li><strong>Post-rollout:</strong> summarize outcomes and ongoing expectations.</li>
+</ul>
+<h3 id="helpdesk-readiness">Helpdesk Readiness</h3>
+<p>Prepare helpdesk with:</p>
+<ul>
+<li>KB for “device not compliant” troubleshooting,</li>
+<li>escalation tree for Intune, Entra, endpoint security, and hardware issues,</li>
+<li>known commands/portals for device sync and compliance refresh,</li>
+<li>process for temporary exclusion approvals.</li>
+</ul>
+<h3 id="rollback-plan">Rollback Plan</h3>
+<p>If user/business impact exceeds tolerance:</p>
+<ol>
+<li>Move CA policy back to <strong>Report-only</strong> or disable affected production ring policy.</li>
+<li>Preserve logging for impacted sign-ins.</li>
+<li>Use temporary exclusion group only for narrowly approved cases.</li>
+<li>Triage root cause (policy logic, telemetry failure, assignment scope, stale records).</li>
+<li>Re-enter pilot/stabilization before re-enforcement.</li>
+</ol>
+<p>Rollback should be documented per ring, not improvised during an outage.</p>
+<h2 id="operational-model">6. Operational Model</h2>
+<h3 id="roles-and-ownership">Roles and Ownership</h3>
+<table>
+<thead>
+<tr>
+<th>Role</th>
+<th>Responsibility</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>IAM / Entra Admin</td>
+<td>Conditional Access design, deployment, sign-in monitoring</td>
+</tr>
+<tr>
+<td>Intune Admin</td>
+<td>Compliance policy creation, assignment, reporting</td>
+</tr>
+<tr>
+<td>Endpoint Engineering</td>
+<td>Device configuration remediation, BitLocker/Secure Boot enablement</td>
+</tr>
+<tr>
+<td>Security Engineering</td>
+<td>Control validation, SentinelOne compliance dependency oversight</td>
+</tr>
+<tr>
+<td>Helpdesk / Support</td>
+<td>User triage, ticket handling, escalation</td>
+</tr>
+<tr>
+<td>Communications / Change Management</td>
+<td>End-user notifications and stakeholder updates</td>
+</tr>
+<tr>
+<td>Service Owner / Approver</td>
+<td>Go/no-go decision per phase/ring</td>
+</tr>
+</tbody>
+</table>
+<h3 id="review-cadence">Review Cadence</h3>
+<ul>
+<li>Daily during pilot and first enforcement week.</li>
+<li>Twice weekly during staged rollout.</li>
+<li>Monthly after stabilization.</li>
+<li>Quarterly control review with security and endpoint owners.</li>
+</ul>
+<h2 id="success-metrics-and-kpis">7. Success Metrics and KPIs</h2>
+<table>
+<thead>
+<tr>
+<th>KPI</th>
+<th>Definition</th>
+<th>Target / Trend</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Device compliance rate</td>
+<td>% of in-scope devices marked compliant</td>
+<td>Trend upward to agreed target (e.g., &gt;95%)</td>
+</tr>
+<tr>
+<td>CA block rate</td>
+<td>%/count of sign-ins blocked for non-compliance</td>
+<td>Initial spike acceptable, then trending down</td>
+</tr>
+<tr>
+<td>Mean time to remediate (MTTR)</td>
+<td>Average time from block to restored compliant access</td>
+<td>Trending down over rollout</td>
+</tr>
+<tr>
+<td>Pilot incident rate</td>
+<td>Tickets/incidents per 100 pilot users</td>
+<td>Stable and manageable before next ring</td>
+</tr>
+<tr>
+<td>Exception volume</td>
+<td>Active temporary exclusions</td>
+<td>Low, time-bound, and declining</td>
+</tr>
+<tr>
+<td>Stale device record count</td>
+<td>Devices inactive or duplicative in management systems</td>
+<td>Trending down</td>
+</tr>
+<tr>
+<td>Policy evaluation reliability</td>
+<td>% devices receiving timely compliance state</td>
+<td>Near-complete and stable</td>
+</tr>
+</tbody>
+</table>
+<h3 id="recommended-reporting-views">Recommended reporting views</h3>
+<ul>
+<li>Daily compliance dashboard by ring.</li>
+<li>Daily CA failures by app, group, and failure reason.</li>
+<li>Weekly remediation aging report.</li>
+<li>Monthly exception register review.</li>
+</ul>
+<h2 id="timeline-estimate">8. Timeline Estimate</h2>
+<table>
+<thead>
+<tr>
+<th>Week</th>
+<th>Focus</th>
+<th>Expected Outputs</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Week 1</td>
+<td>Discovery and stakeholder alignment</td>
+<td>Inventory baseline, scope confirmation, owner mapping, group design</td>
+</tr>
+<tr>
+<td>Week 2</td>
+<td>Compliance policy build and validation</td>
+<td>Draft/initial policies, assignment tests, reporting views</td>
+</tr>
+<tr>
+<td>Week 3</td>
+<td>Report-only observation</td>
+<td>Gap analysis, false-positive cleanup, support content</td>
+</tr>
+<tr>
+<td>Week 4</td>
+<td>Pilot enforcement</td>
+<td>Pilot metrics, remediation runbook validation, go/no-go for production</td>
+</tr>
+<tr>
+<td>Week 5</td>
+<td>Ring 1 rollout</td>
+<td>First production enforcement, daily monitoring</td>
+</tr>
+<tr>
+<td>Week 6</td>
+<td>Ring 2 rollout</td>
+<td>Expanded enforcement, trend review, exceptions cleanup</td>
+</tr>
+<tr>
+<td>Week 7</td>
+<td>Ring 3 rollout</td>
+<td>Broad production coverage</td>
+</tr>
+<tr>
+<td>Week 8</td>
+<td>Stabilization and steady-state handoff</td>
+<td>KPI baseline, review cadence, backlog of residual fixes</td>
+</tr>
+</tbody>
+</table>
+<p>This timeline can compress or expand depending on current compliance posture, number of device exceptions, and operational readiness.</p>
+<h2 id="recommended-implementation-checklist">9. Recommended Implementation Checklist</h2>
+<table>
+<thead>
+<tr>
+<th>Item</th>
+<th>Status</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Confirm licensing for all in-scope users</td>
+<td>Pending</td>
+<td>Entra ID P1 + Intune minimum</td>
+</tr>
+<tr>
+<td>Create pilot/ring/exclusion/break-glass groups</td>
+<td>Pending</td>
+<td>Verify ownership and membership rules</td>
+</tr>
+<tr>
+<td>Complete discovery inventory</td>
+<td>Pending</td>
+<td>Establish baseline metrics</td>
+</tr>
+<tr>
+<td>Finalize built-in compliance policy</td>
+<td>Pending</td>
+<td>See <code>CAP\01-Compliance-Policy-BitLocker-SecureBoot.md</code></td>
+</tr>
+<tr>
+<td>Finalize custom compliance policy</td>
+<td>Pending</td>
+<td>See <code>CAP\02-Custom-Compliance-SentinelOne\</code></td>
+</tr>
+<tr>
+<td>Validate report-only CA behavior</td>
+<td>Pending</td>
+<td>Review sign-in logs</td>
+</tr>
+<tr>
+<td>Train helpdesk and publish KB</td>
+<td>Pending</td>
+<td>Before pilot enforcement</td>
+</tr>
+<tr>
+<td>Test break-glass accounts</td>
+<td>Pending</td>
+<td>Before every enforcement milestone</td>
+</tr>
+<tr>
+<td>Execute ringed rollout</td>
+<td>Pending</td>
+<td>Pause between rings for review</td>
+</tr>
+<tr>
+<td>Establish steady-state reviews</td>
+<td>Pending</td>
+<td>Monthly and quarterly governance</td>
+</tr>
+</tbody>
+</table>
+<h2 id="final-recommendation">10. Final Recommendation</h2>
+<p>Proceed with a <strong>compliance-first, enforcement-second</strong> rollout. Do not enable broad Conditional Access enforcement until the built-in BitLocker/Secure Boot compliance policy and the SentinelOne custom compliance policy are both producing reliable signals and pilot remediation is proven. Success depends less on the CA toggle itself and more on clean inventory, accurate device state, disciplined exclusions, tested break-glass access, and tight monitoring during each rollout ring.</p>
+
+  </main>
+</body>
+</html>

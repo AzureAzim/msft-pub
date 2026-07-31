@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SentinelOne Custom Compliance for Windows in Microsoft Intune</title>
+  <style>
+:root {
+  color-scheme: light;
+}
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+  padding: 2rem 1.25rem 4rem;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+  line-height: 1.65;
+  color: #1f2328;
+  background: #ffffff;
+}
+main {
+  max-width: 900px;
+  margin: 0 auto;
+}
+h1, h2, h3, h4, h5, h6 {
+  line-height: 1.25;
+  margin-top: 1.75em;
+  margin-bottom: 0.6em;
+  color: #0f172a;
+}
+h1 {
+  margin-top: 0;
+  font-size: 2rem;
+  border-bottom: 1px solid #d0d7de;
+  padding-bottom: 0.3em;
+}
+h2 {
+  font-size: 1.5rem;
+  border-bottom: 1px solid #d8dee4;
+  padding-bottom: 0.25em;
+}
+h3 {
+  font-size: 1.2rem;
+}
+p, ul, ol, table, pre, blockquote {
+  margin-top: 0;
+  margin-bottom: 1rem;
+}
+ul, ol {
+  padding-left: 1.5rem;
+}
+li + li {
+  margin-top: 0.25rem;
+}
+a {
+  color: #0969da;
+}
+a:hover {
+  text-decoration: underline;
+}
+hr {
+  border: 0;
+  border-top: 1px solid #d8dee4;
+  margin: 2rem 0;
+}
+code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+  font-size: 0.95em;
+}
+p code, li code, td code, th code {
+  background: #f6f8fa;
+  padding: 0.15em 0.35em;
+  border-radius: 6px;
+}
+pre {
+  background: #f6f8fa;
+  padding: 1rem;
+  border: 1px solid #d0d7de;
+  border-radius: 8px;
+  overflow-x: auto;
+}
+pre code {
+  background: transparent;
+  padding: 0;
+}
+blockquote {
+  margin-left: 0;
+  padding: 0.25rem 1rem;
+  color: #57606a;
+  border-left: 4px solid #d0d7de;
+  background: #f6f8fa;
+}
+table {
+  width: 100%;
+  border-collapse: collapse;
+  display: block;
+  overflow-x: auto;
+}
+th, td {
+  border: 1px solid #d0d7de;
+  padding: 0.6rem 0.75rem;
+  text-align: left;
+  vertical-align: top;
+}
+th {
+  background: #f6f8fa;
+}
+strong {
+  font-weight: 600;
+}
+img {
+  max-width: 100%;
+}
+  </style>
+</head>
+<body>
+  <main>
+<h1 id="sentinelone-custom-compliance-for-windows-in-microsoft-intune">SentinelOne Custom Compliance for Windows in Microsoft Intune</h1>
+<h2 id="overview">Overview</h2>
+<p>This folder contains a <strong>Windows custom compliance</strong> example for Microsoft Intune that verifies:</p>
+<ol>
+<li><strong>SentinelOne is installed</strong></li>
+<li><strong>A SentinelOne agent service is running</strong></li>
+</ol>
+<p>Intune custom compliance for Windows uses <strong>two artifacts together</strong>:</p>
+<ul>
+<li>A <strong>device-side detection script</strong> that runs on the endpoint and writes a JSON object to <strong>stdout</strong></li>
+<li>A <strong>custom compliance rules file</strong> that tells Intune how to evaluate the JSON values returned by the script</li>
+</ul>
+<p>For this package:</p>
+<ul>
+<li><code>DetectSentinelOne-Windows.ps1</code> returns JSON such as:</li>
+</ul>
+<pre><code class="language-json">{&quot;SentinelOneInstalled&quot;:true,&quot;SentinelOneServiceRunning&quot;:true}
+</code></pre>
+<ul>
+<li><code>SentinelOneComplianceRules.json</code> tells Intune that both values must equal <code>true</code></li>
+</ul>
+<hr />
+<h2 id="files-in-this-folder">Files in this folder</h2>
+<table>
+<thead>
+<tr>
+<th>File</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>README.md</code></td>
+<td>Explains how the custom compliance package works and how to deploy it in Intune</td>
+</tr>
+<tr>
+<td><code>SentinelOneComplianceRules.json</code></td>
+<td>Intune custom compliance rules file</td>
+</tr>
+<tr>
+<td><code>DetectSentinelOne-Windows.ps1</code></td>
+<td>Windows detection script that checks install state and service status</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="how-intune-custom-compliance-works">How Intune custom compliance works</h2>
+<h3 id="detection-script">1. Detection script</h3>
+<p>The detection script runs locally on the Windows device and must output a <strong>single JSON object</strong> to standard output.<br />
+Each JSON property name must match a <code>SettingName</code> in the rules file.</p>
+<p>Example:</p>
+<pre><code class="language-json">{
+  &quot;SentinelOneInstalled&quot;: true,
+  &quot;SentinelOneServiceRunning&quot;: true
+}
+</code></pre>
+<h3 id="rules-file">2. Rules file</h3>
+<p>The rules file contains a top-level <code>Rules</code> array. Each rule defines:</p>
+<ul>
+<li><code>SettingName</code></li>
+<li><code>Operator</code></li>
+<li><code>DataType</code></li>
+<li><code>Operand</code></li>
+<li><code>MoreInfoUrl</code></li>
+<li><code>RemediationStrings</code></li>
+</ul>
+<p>Intune compares the script output to these rules and marks the device compliant or noncompliant accordingly.</p>
+<hr />
+<h2 id="what-this-specific-policy-checks">What this specific policy checks</h2>
+<h3 id="sentineloneinstalled"><code>SentinelOneInstalled</code></h3>
+<p>Evaluates whether SentinelOne appears to be installed by checking one or more of the following:</p>
+<ul>
+<li>Known Windows services such as <code>SentinelAgent</code> or <code>SentinelServiceHelper</code></li>
+<li>Registry locations commonly associated with SentinelOne, such as:
+<ul>
+<li><code>HKLM:\SOFTWARE\Sentinel Labs\Sentinel Agent</code></li>
+<li><code>HKLM:\SOFTWARE\WOW6432Node\Sentinel Labs\Sentinel Agent</code></li>
+</ul>
+</li>
+<li>Installed application entries in Windows uninstall registry paths that contain SentinelOne/Sentinel Agent naming</li>
+</ul>
+<h3 id="sentineloneservicerunning"><code>SentinelOneServiceRunning</code></h3>
+<p>Evaluates whether a SentinelOne-related agent service is currently in the <strong>Running</strong> state.</p>
+<blockquote>
+<p>Important: exact service names, display names, and registry paths can vary by SentinelOne version, packaging method, or MSP deployment model. Validate the detection logic against your actual SentinelOne deployment before broad rollout.</p>
+</blockquote>
+<hr />
+<h2 id="deployment-steps-in-intune">Deployment steps in Intune</h2>
+<h3 id="step-1-upload-the-detection-script">Step 1: Upload the detection script</h3>
+<p>In Intune admin center:</p>
+<p><strong>Devices</strong> &gt; <strong>Compliance</strong> &gt; <strong>Scripts</strong></p>
+<p>Upload:</p>
+<ul>
+<li><code>DetectSentinelOne-Windows.ps1</code></li>
+</ul>
+<p>After upload, assign the script to a pilot device group and confirm devices report script results successfully.</p>
+<h3 id="step-2-create-the-custom-compliance-policy">Step 2: Create the custom compliance policy</h3>
+<p>In Intune admin center:</p>
+<p><strong>Devices</strong> &gt; <strong>Compliance</strong> &gt; <strong>Policies</strong> &gt; <strong>Create policy</strong> &gt; <strong>Windows 10 and later</strong> &gt; <strong>Custom compliance</strong></p>
+<p>When prompted:</p>
+<ul>
+<li>Select the previously uploaded detection script</li>
+<li>Upload <code>SentinelOneComplianceRules.json</code></li>
+</ul>
+<h3 id="step-3-configure-actions-for-noncompliance">Step 3: Configure actions for noncompliance</h3>
+<p>Recommended approach:</p>
+<ul>
+<li>Mark device noncompliant immediately, or</li>
+<li>Use a short pilot grace period if you need time to validate detection accuracy</li>
+</ul>
+<h3 id="step-4-assign-to-a-pilot-group-first">Step 4: Assign to a pilot group first</h3>
+<p>Assign first to a limited Windows pilot group, then broaden once:</p>
+<ul>
+<li>The script output is validated on real devices</li>
+<li>Service names/registry paths are confirmed</li>
+<li>User-facing remediation messages are acceptable</li>
+</ul>
+<hr />
+<h2 id="operational-notes">Operational notes</h2>
+<ul>
+<li>The script should emit <strong>only JSON</strong> to stdout. Extra output can break compliance evaluation.</li>
+<li>If SentinelOne uses different service names in your environment, update the script and rules package before production rollout.</li>
+<li>This custom compliance policy only evaluates device state. To enforce access impact, pair it with Conditional Access using <strong>Require device to be marked as compliant</strong> where appropriate.</li>
+</ul>
+<hr />
+<h2 id="expected-output-example">Expected output example</h2>
+<p>Compliant device:</p>
+<pre><code class="language-json">{&quot;SentinelOneInstalled&quot;:true,&quot;SentinelOneServiceRunning&quot;:true}
+</code></pre>
+<p>Noncompliant example:</p>
+<pre><code class="language-json">{&quot;SentinelOneInstalled&quot;:true,&quot;SentinelOneServiceRunning&quot;:false}
+</code></pre>
+<hr />
+<h2 id="recommended-validation-before-production">Recommended validation before production</h2>
+<p>Test on:</p>
+<ul>
+<li>A device with a healthy SentinelOne agent</li>
+<li>A device where SentinelOne is uninstalled</li>
+<li>A device where the agent is installed but the service is stopped or unhealthy</li>
+</ul>
+<p>Confirm that Intune shows the expected noncompliance message for each rule.</p>
+
+  </main>
+</body>
+</html>
